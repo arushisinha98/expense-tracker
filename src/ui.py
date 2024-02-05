@@ -12,21 +12,25 @@ curr_dir = os.path.dirname(__file__)
 sys.path.append(curr_dir)
 
 from constants import expense_categories
-from formatting import format_table, horizontal_bar, local_css
-from uploader import clear_directory, search_data, process_upload, completed, save_data
+from format_utilities import format_table, horizontal_bar, local_css
+from upload_utilities import clear_directory, search_data, process_upload, completed, save_data
 from dtype_conversions import float_to_str
-from compile_spend import compile_statements, category_table, balance_table
+from compile_utilities import compile_statements, category_table, balance_table
 
-from frontend import page1, page3
+from frontend import uploader, tabulator, calculator
 
 readme_tab, sg_tab, us_tab, summary_tab = st.tabs(["Upload", "Singapore", "United States", "Calculator"])
 
 
-# clear data in uploads folder (staging)
+# clear data in uploads folder
 clear_directory()
 
+# initialize master_df
+master_df = pd.DataFrame()
+
 with readme_tab:
-    page1()
+    uploader()
+    tabulator()
 
 with sg_tab:
     st.header("🇸🇬 Singapore")
@@ -74,16 +78,36 @@ with sg_tab:
         st.altair_chart(chart, use_container_width = True)
     
     st.caption("CREDIT CARDS")
-    ccard1, ccard2, ccard3 = st.columns([1, 1, 1])
-    with ccard1:
-        st.image("images/hsbc-revolution.jpg",
-                 caption = "HSBC Revolution", width = 175)
-    with ccard2:
-        st.image("images/ocbc-90nmastercard.png",
-                 caption = "OCBC 90°N", width = 175)
-    with ccard3:
-        st.image("images/sc-smart.jpg",
-                caption = "Standard Chartered Smart", width = 175)
+    cc1, cc2, cc3 = st.tabs(["HSBC Revolution","OCBC 90°N","Standard Chartered Smart"])
+    with cc1:
+        ccards, ctext = st.columns([1, 3])
+        with ccards:
+            st.image("images/hsbc-revolution.jpg",
+                     caption = "HSBC Revolution", width = 175)
+        with ctext:
+            st.caption("No Annual Fee | 3.25% Foreign Currency Transaction Fee")
+            st.caption("4 miles per S\$1 up to S\$1,000/month, 0.4 miles per S$1 thereafter")
+            st.caption("5:2 KrisFlyer Miles Conversion, S\$43.60 Annual Transfer Fee")
+    with cc2:
+        ccards, ctext = st.columns([1, 3])
+        with ccards:
+            st.image("images/ocbc-90nmastercard.png",
+                     caption = "OCBC 90°N", width = 175)
+        with ctext:
+            st.caption("S\$196.20 Annual Fee | 3.25% Foreign Currency Transaction Fee + Mastercard fees (~1%)")
+            st.caption("1.3 miles per S\$1 Local Spend, 2.1 miles per S\$1 Foreign Spend")
+            st.caption("1:1 KrisFlyer / Flying Blue Miles Conversion, S\$25 Conversion Fee")
+        
+    with cc3:
+        ccards, ctext = st.columns([1, 3])
+        with ccards:
+            st.image("images/sc-smart.jpg",
+                     caption = "Standard Chartered Smart", width = 175)
+        with ctext:
+            st.caption("No Annual Fee | 3.5% Foreign Currency Transaction Fee")
+            st.caption("19.2 points per S\$1 on BUS/MRT, 1.6 points per S\$1 otherwise")
+            st.caption("320 points = S\$1 | 1.015:1 KrisFlyer Miles Conversion, S\$26.75 Conversion Fee")
+        
                 
     # account balance chart and table
     st.subheader("Account Balance", divider = "gray")
@@ -91,8 +115,11 @@ with sg_tab:
     series = balance_table(df, (date(1998,10,10), date.today()))
     st.bar_chart(series, x = "Date", y = "Balance", color = "Source", width = 10)
     table_df = pd.pivot_table(series, values = 'Balance', index = ['Date'],
-                       columns = ['Source'], aggfunc = "mean")
+                              columns = ['Source'], aggfunc = "mean")
     st.dataframe(table_df, use_container_width = True)
+    
+    # append table_df to master_df
+    master_df = master_df.append(table_df)
     
 with us_tab:
     st.header("🇺🇸 United States")
@@ -108,4 +135,4 @@ with us_tab:
     st.subheader("Transfers", divider = "gray")
 
 with summary_tab:
-    page3()
+    calculator(master_df)

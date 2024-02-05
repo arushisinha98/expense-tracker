@@ -6,7 +6,7 @@ from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
 from constants import expense_categories
-from uploader import list_files
+from upload_utilities import list_files
 
 
 def compile_statements(country, period, exclude = ['paystubs.csv']):

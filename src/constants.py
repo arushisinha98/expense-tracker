@@ -14,6 +14,14 @@ expense_categories = [
     'Unsure'
 ]
 
+credit_categories = [
+    'Salary',
+    'Dividend',
+    'Realized Gain/Loss',
+    'Gifts / Family',
+    'Other'
+]
+
 account_names = {
     'DBS' : 'SGD',
     'DBS - FD' : 'SGD',
@@ -24,7 +32,7 @@ account_names = {
     'CDP' : 'SGD',
     'Instarem' : 'SGD',
     'PayLah!' : 'SGD',
-    'BoA' : 'USD',
+    'Bank of America' : 'USD',
     'Robinhood - Cash' : 'USD',
     'Robinhood - Personal' : 'USD',
     'Robinhood - Shared' : 'USD',

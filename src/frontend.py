@@ -8,14 +8,15 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from annotated_text import annotated_text
-from constants import account_names, expense_categories
+
+from constants import account_names, expense_categories, credit_categories
 from dtype_conversions import float_to_str
-from formatting import format_table
-from uploader import clear_directory, search_data, process_upload, completed, save_data
+from format_utilities import format_table
+from upload_utilities import clear_directory, search_data, process_upload, completed, save_data
 
 
-def page1():
-    st.header("Data")
+def uploader():
+    st.header("📤 Upload Data")
     st.caption("Add monthly bank, credit card, or investment statements to the database.")
     
     # file uploader for statements
@@ -75,23 +76,48 @@ def page1():
         if "upload_data" in st.session_state:
             st.session_state.pop("upload_data")
             st.session_state.pop("preprocessed")
+            
+            
+def tabulator():
+    st.title("")
+    st.caption("OR Manually tabulate data.")
+    
+    # date, description, amount, category
+    @st.cache_data
+    def initialize_data() -> pd.DataFrame:
+        df = pd.DataFrame(columns = ["Date","Description","Amount","Category"])
+        df["Date"] = df["Date"].astype("datetime64")
+        df["Amount"] = df["Description"].astype("float64")
+        df["Category"] = df["Category"].astype("category")
+        return df
+        
+    def show_button():
+        return True
+    
+    df_editor = st.data_editor(initialize_data(), on_change = show_button(),
+                               use_container_width = True, num_rows = 'dynamic', hide_index = True,
+                               column_config = {"Date": st.column_config.DateColumn(),
+                                                "Category": st.column_config.SelectboxColumn(options = expense_categories)}
+    )
+    if show_button:
+        prin("YES")
+            
+            
 
-
-def page3():
+def calculator(master_df = pd.DataFrame()):
     st.header("📱 Calculator")
     st.caption("Manually fill out account values to compute total net worth in USD.")
 
-    #@st.cache_data
+    @st.cache_data
     def initialize_data() -> pd.DataFrame:
         df = pd.DataFrame(columns = ["Account","Currency","Raw Value"])
         df["Account"], df["Currency"] = list(account_names.keys()), list(account_names.values())
         df["Raw Value"] = np.zeros((len(df),1))
-        
         df["Currency"] = df["Currency"].astype("category")
         df["Raw Value"] = df["Raw Value"].astype("float64")
         return df
 
-    with st.form("form"):
+    with st.form("calculator_form"):
         st.caption("⏰ Estimated time: 10 minutes")
         edited = st.data_editor(initialize_data(), use_container_width = True, num_rows = 'dynamic')
         submit_button = st.form_submit_button("Calculate")

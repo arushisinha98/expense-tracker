@@ -1,1 +1,1 @@
-![Alt text](/screenshots/expense-example?raw=true "Optional Title")
+![Alt text](screenshots/expense-example.png "Optional Title")

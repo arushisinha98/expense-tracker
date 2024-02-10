@@ -4,6 +4,9 @@ import sys
 curr_dir = os.path.dirname(__file__)
 sys.path.append(curr_dir)
 
+from decouple import config
+MASTER_DIRECTORY = config('MASTER_DIRECTORY')
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -79,7 +82,6 @@ def uploader():
             
             
 def tabulator():
-    st.title("")
     st.caption("OR Manually tabulate data.")
     
     # date, description, amount, category
@@ -90,22 +92,28 @@ def tabulator():
         df["Amount"] = df["Description"].astype("float64")
         df["Category"] = df["Category"].astype("category")
         return df
-        
-    def show_button():
-        return True
     
-    df_editor = st.data_editor(initialize_data(), on_change = show_button(),
-                               use_container_width = True, num_rows = 'dynamic', hide_index = True,
-                               column_config = {"Date": st.column_config.DateColumn(),
-                                                "Category": st.column_config.SelectboxColumn(options = expense_categories)}
-    )
-    if show_button:
-        prin("YES")
-            
-            
+    with st.form(key = "manual_form"):
+        df_editor = st.data_editor(initialize_data(),
+                                   use_container_width = True, num_rows = 'dynamic', hide_index = True,
+                                   column_config = {"Date": st.column_config.DateColumn(),
+                                                    "Category": st.column_config.SelectboxColumn(options = expense_categories)}
+        )
+        
+        """
+        option = st.selectbox("", ("🇸🇬 Singapore", "🇺🇸 United States"),
+                              index = None,
+                              placeholder = "Choose a classification tag ...",
+                              label_visibility = "collapsed",
+        )
+        st.write(option)
+        
+        submit_button = st.form_submit_button("Submit", disabled = option is None)
+        """
+        submit_button = st.form_submit_button("Submit")
 
 def calculator(master_df = pd.DataFrame()):
-    st.header("📱 Calculator")
+    st.header("⚖️ Calculator")
     st.caption("Manually fill out account values to compute total net worth in USD.")
 
     @st.cache_data
@@ -117,7 +125,7 @@ def calculator(master_df = pd.DataFrame()):
         df["Raw Value"] = df["Raw Value"].astype("float64")
         return df
 
-    with st.form("calculator_form"):
+    with st.form(key = "calculator_form"):
         st.caption("⏰ Estimated time: 10 minutes")
         edited = st.data_editor(initialize_data(), use_container_width = True, num_rows = 'dynamic')
         submit_button = st.form_submit_button("Calculate")
@@ -126,3 +134,57 @@ def calculator(master_df = pd.DataFrame()):
     if submit_button:
         total = [x*converter[edited["Currency"][ii] == "USD"] for ii, x in enumerate(edited["Raw Value"])]
         st.write(f"Total in USD: ${float_to_str(sum(total))}")
+
+
+def show_cards(country):
+    assert country in ["SG", "US"]
+    
+    try:
+        if country == "SG":
+            cc1, cc2, cc3 = st.tabs(["HSBC Revolution","OCBC 90°N","Standard Chartered Smart"])
+            with cc1:
+                ccards, ctext = st.columns([1, 3])
+                with ccards:
+                    st.image("images/hsbc-revolution.jpg", width = 175)
+                with ctext:
+                    st.caption("No Annual Fee | 3.25% Foreign Currency Transaction Fee")
+                    st.caption("4 miles per S\$1 up to S\$1,000/month, 0.4 miles per S$1 thereafter")
+                    st.caption("5:2 KrisFlyer Miles Conversion, S\$43.60 Annual Transfer Fee")
+            with cc2:
+                ccards, ctext = st.columns([1, 3])
+                with ccards:
+                    st.image("images/ocbc-90nmastercard.png", width = 175)
+                with ctext:
+                    st.caption("S\$196.20 Annual Fee | 3.25% Foreign Currency Transaction Fee + Mastercard Fees (~1%)")
+                    st.caption("1.3 miles per S\$1 Local Spend, 2.1 miles per S\$1 Foreign Spend")
+                    st.caption("1:1 KrisFlyer / Flying Blue Miles Conversion, S\$25 Conversion Fee")
+                
+            with cc3:
+                ccards, ctext = st.columns([1, 3])
+                with ccards:
+                    st.image("images/sc-smart.jpg", width = 175)
+                with ctext:
+                    st.caption("No Annual Fee | 3.5% Foreign Currency Transaction Fee")
+                    st.caption("19.2 points per S\$1 on BUS/MRT, 1.6 points per S\$1 otherwise")
+                    st.caption("320 points = S\$1 | 1.015:1 KrisFlyer Miles Conversion, S\$26.75 Conversion Fee")
+                    
+        else:
+            cc1, cc2 = st.tabs(["Chase United Gateway","Bank of America Travel Rewards"])
+            with cc1:
+                ccards, ctext = st.columns([1, 3])
+                with ccards:
+                    st.image("images/chase-unitedgateway.png", width = 175)
+                with ctext:
+                    st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
+                    st.caption("2 miles per \$1 on United® purchases, gas stations, local transit")
+                    st.caption("1 mile per \$1 otherwise")
+            with cc2:
+                ccards, ctext = st.columns([1, 3])
+                with ccards:
+                    st.image("images/boa-travelrewards.jpg", width = 175)
+                with ctext:
+                    st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
+                    st.caption("1.5 points per \$1 on all purchases")
+                         
+    except Exception as e:
+        print(e)

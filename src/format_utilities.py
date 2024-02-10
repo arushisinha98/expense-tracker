@@ -64,7 +64,7 @@ def horizontal_bar(chart_data, size = 40):
                 color = alt.Color("variable",
                                   type = "nominal",
                                   title = "",
-                                  legend = alt.Legend(orient = 'top', columns = 5)),
+                                  legend = alt.Legend(orient = 'top', columns = 3)),
                 order = alt.Order("variable",
                                   sort = "descending"),
             )

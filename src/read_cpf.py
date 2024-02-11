@@ -8,6 +8,9 @@ from pdf_utilities import extract_text, select_text, invert_select_text
 from dtype_conversions import str_to_float
 from constants import expense_categories
 
+from decouple import config
+MY_NAME = config('MY_NAME')
+
 
 class CPFStatement:
     '''
@@ -45,7 +48,7 @@ class CPFStatement:
             subtext = select_text(text, start1, end1)
             
             # remove page-by-page balance carried/brought forward
-            transactions = invert_select_text(subtext, "ARUSHI SINHA", start1)
+            transactions = invert_select_text(subtext, MY_NAME, start1)
             
             # split by newline
             data = transactions.split("\n")

@@ -5,11 +5,10 @@ import pandas as pd
 
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
+MY_NAME = config('MY_NAME')
 DBS, OCBC, IBKR, Endowus = config('DBS'), config('OCBC'), config('IBKR'), config('Endowus')
-FD = config('FD')
-SRS = config('SRS')
-CPF = config('CPF')
-# CDP = config('CDP')
+FD, SRS = config('FD'), config('SRS')
+CPF, CDP = config('CPF'), config('CDP')
 
 from pdf_utilities import extract_text
 from read_dbs import DBSStatement, SRSStatement, FDStatement
@@ -17,6 +16,7 @@ from read_ocbc import OCBCStatement
 from read_ibkr import IBKRStatement
 from read_endowus import EndowusStatement
 from read_cpf import CPFStatement
+from read_cdp import CDPStatement
 from constants import expense_categories
 
 
@@ -40,6 +40,7 @@ def list_files(directory = MASTER_DIRECTORY):
     '''
     FUNCTION to list all the files in a directory.
     input: directory, root as a string
+    output: list of files
     '''
     try:
         os.chdir(directory)
@@ -56,7 +57,9 @@ def search_data(filename):
     '''
     FUNCTION to search if a file is already in database and if a pre-processed version can be used.
     input: filename, name of file to be searched
-    output: bool, True if found, False if not found
+    output:
+    - bool, True if found, False if not found
+    - df, dataframe of pre-processed data if found, empty dataframe if not found
     '''
     try:
         file = filename[:filename.rfind(".")] + '.csv'
@@ -78,8 +81,7 @@ def process_upload(filename, bytes_data):
     '''
     FUNCTION to read uploaded document and assign location to save data.
     input: filename, name of file that was uploaded by user on frontend
-    output:
-    - statement, class object created from file if successfully read
+    output: statement, class object created from file if successfully read
     '''
     try:
         # read file from uploads directory
@@ -87,7 +89,7 @@ def process_upload(filename, bytes_data):
         text = extract_text(f"{MASTER_DIRECTORY}/data/uploads/{filename}")
         
         # if DBS Statement, copy raw file to DBS folder and return statement object
-        if filename.endswith(".pdf") and check_statement(text, ["DBS", "ARUSHI SINHA", DBS]):
+        if filename.endswith(".pdf") and check_statement(text, ["DBS", MY_NAME, DBS]):
             filepath = f"{MASTER_DIRECTORY}/data/SG/DBS/{filename}"
             with open(filepath, 'wb') as f:
                 f.write(bytes_data)
@@ -95,7 +97,7 @@ def process_upload(filename, bytes_data):
             return statement
         
         # if OCBC Statement, copy raw file to OCBC folder and return statement object
-        elif filename.endswith(".pdf") and check_statement(text, ["OCBC 90.N CARD", "ARUSHI SINHA", OCBC]):
+        elif filename.endswith(".pdf") and check_statement(text, ["OCBC 90.N CARD", MY_NAME, OCBC]):
             filepath = f"{MASTER_DIRECTORY}/data/SG/OCBC/{filename}"
             with open(filepath, 'wb') as f:
                 f.write(bytes_data)
@@ -111,7 +113,7 @@ def process_upload(filename, bytes_data):
             return statement
             
         # if DBS (FD / SRS) Statement, save processed dataframe to relevant folder and return statement object
-        elif filename.endswith(".pdf") and (check_statement(text, ["Supplementary Retirement Scheme", "ARUSHI SINHA", SRS]) or check_statement(text, ["Fixed Deposit", "ARUSHI SINHA", FD])):
+        elif filename.endswith(".pdf") and (check_statement(text, ["Supplementary Retirement Scheme", MY_NAME, SRS]) or check_statement(text, ["Fixed Deposit", MY_NAME, FD])):
             
             filepath = f"{MASTER_DIRECTORY}/data/SG/FD or SRS/{filename}"
             with open(filepath, 'wb') as f:
@@ -125,7 +127,7 @@ def process_upload(filename, bytes_data):
                 return statement2 # auto-appends SRS to FD if detected in statement
             
         # if Endowus Statement, save processed dataframe to Endowus folder and return statement object
-        elif filename.startswith("Endowus") and filename.endswith(".pdf") and check_statement(text, ["Endowus", "ARUSHI SINHA", Endowus]):
+        elif filename.startswith("Endowus") and filename.endswith(".pdf") and check_statement(text, ["Endowus", MY_NAME, Endowus]):
             filepath = f"{MASTER_DIRECTORY}/data/SG/Endowus/{filename}"
             with open(filepath, 'wb') as f:
                 f.write(bytes_data)
@@ -133,22 +135,20 @@ def process_upload(filename, bytes_data):
             return statement
             
         # if CPF Statement, save processed dataframe to CPF folder and return statement object
-        elif ("Yearly Statement of Account" in filename) and filename.endswith(".pdf") and check_statement(text, ["CPF", "ARUSHI SINHA", CPF]):
+        elif ("Yearly Statement of Account" in filename) and filename.endswith(".pdf") and check_statement(text, ["CPF", MY_NAME, CPF]):
             filepath = f"{MASTER_DIRECTORY}/data/SG/CPF/{filename}"
             with open(filepath, 'wb') as f:
                 f.write(bytes_data)
             statement = CPFStatement(filepath)
             return statement
             
-            """
-            # if CDP Statement, save processed dataframe to CDP folder and return statement object
-            elif CDP in filename:
-                filepath = f"{MASTER_DIRECTORY}/data/uploads/{filename}"
-                statement = CDPStatement(filepath)
-                df = statement.get_transactions()
-                clear_directory(path = f"{MASTER_DIRECTORY}/data/SG/CDP/")
-                df.to_csv(f"{MASTER_DIRECTORY}/data/SG/CDP/{filename}")
-            """
+        # if CDP Statement, save processed dataframe to CDP folder and return statement object
+        elif filename.endswith(".pdf") and check_statement(text, ["CDP", MY_NAME, CDP[-4:]]):
+            filepath = f"{MASTER_DIRECTORY}/data/SG/CDP/{filename}"
+            with open(filepath, 'wb') as f:
+                f.write(bytes_data)
+            statement = CDPStatement(filepath)
+            return statement
             
         else:
             return False
@@ -163,8 +163,9 @@ def check_statement(text, match_strings):
 
 def completed(df):
     '''
-    FUNCTION to check if all expenses have been classified
+    FUNCTION to check if, minimally, all expenses have been classified. Note expenses are -ve amounts (i.e. outgoing); classification of incoming amounts (+ve) is optional.
     input: df, the dataframe
+    output: bool
     '''
     try:
         if "Category" not in df.columns:
@@ -183,6 +184,7 @@ def save_data(df, filename):
     input:
     - df, the dataframe
     - filename, the name of the original file
+    output: N/A
     '''
     try:
         clear_directory()

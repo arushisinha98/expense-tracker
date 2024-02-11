@@ -19,8 +19,8 @@ from compile_utilities import compile_statements, category_table, balance_table
 
 from frontend import uploader, tabulator, calculator, show_cards
 
+colors = ['#EEB64B','#FC9460','#E54264','#442261','#005B6E','#64A47F','#C3C48A']
 readme_tab, sg_tab, us_tab, summary_tab = st.tabs(["Upload", "Singapore", "United States", "Calculator"])
-
 
 # clear data in uploads folder
 clear_directory()
@@ -77,18 +77,27 @@ with sg_tab:
         # account balance chart
         df = compile_statements('SG', (date(1998,10,10), date.today()))
         series = balance_table(df, (date(1998,10,10), date.today()))
-        st.bar_chart(series, x = "Date", y = "Balance", color = "Source", width = 10)
+        
         table_df = pd.pivot_table(series, values = 'Balance', index = ['Date'],
                                   columns = ['Source'], aggfunc = "mean")
-               
-        # dataframe of accounts
+        series_columns = [col for col in list(table_df.columns)]
+        st.bar_chart(table_df, y = series_columns, color = colors[:len(series_columns)])
+        
+        # dataframe of account balances over time
         with st.expander("View Details"):
             st.dataframe(table_df, use_container_width = True)
-    
+        
+    # take last value in each column and add to master_df
+    save_amounts = dict()
+    for col in table_df.columns:
+        save_amounts[col] = table_df[col].ffill().iloc[-1]
+    save_df = pd.DataFrame.from_dict(save_amounts, orient = 'index', columns = ["Raw Value"])
+    save_df["Currency"] = "SGD"
+    master_df = master_df.append(save_df)
     
 with us_tab:
     st.header("🇺🇸 United States")
     show_cards("US")
 
 with summary_tab:
-    calculator()
+    calculator(master_df)

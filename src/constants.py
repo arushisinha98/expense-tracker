@@ -14,14 +14,6 @@ expense_categories = [
     'Unsure'
 ]
 
-credit_categories = [
-    'Salary',
-    'Dividend',
-    'Realized Gain/Loss',
-    'Gifts / Family',
-    'Other'
-]
-
 converter = {
     'USD': 1,
     'SGD': 0.74

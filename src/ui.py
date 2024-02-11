@@ -12,14 +12,13 @@ curr_dir = os.path.dirname(__file__)
 sys.path.append(curr_dir)
 
 from constants import expense_categories
-from format_utilities import format_table, horizontal_bar, local_css
+from format_utilities import format_table, horizontal_bar, vertical_bar, local_css
 from upload_utilities import clear_directory, search_data, process_upload, completed, save_data
 from dtype_conversions import float_to_str, redact_text
 from compile_utilities import compile_statements, category_table, balance_table
 
 from frontend import uploader, tabulator, calculator, show_cards
 
-colors = ['#EEB64B','#FC9460','#E54264','#442261','#005B6E','#64A47F','#C3C48A']
 readme_tab, sg_tab, us_tab, summary_tab = st.tabs(["Upload", "Singapore", "United States", "Calculator"])
 
 # clear data in uploads folder
@@ -84,26 +83,28 @@ with sg_tab:
                                  .loc[df["Category"].isin(filter_categories)]\
                                  .reset_index(drop = True), use_container_width = True)
     
+    # container 2: details of active credit cards
     show_cards("SG", redact)
     
+    # container 3: account balance
     with st.container(border = True):
         # account balance chart
         df = compile_statements('SG', (date(1998,10,10), date.today()))
         series = balance_table(df, (date(1998,10,10), date.today()))
-        
-        table_df = pd.pivot_table(series, values = 'Balance', index = ['Date'],
+        pivot_df = pd.pivot_table(series, values = 'Balance', index = ['Date'],
                                   columns = ['Source'], aggfunc = "mean")
-        series_columns = [col for col in list(table_df.columns)]
-        st.bar_chart(table_df, y = series_columns, color = colors[:len(series_columns)])
+        
+        chart = vertical_bar(pivot_df, redact)
+        st.altair_chart(chart, use_container_width = True)
         
         # dataframe of account balances over time
         with st.expander("View Details"):
-            st.dataframe(table_df, use_container_width = True)
+            st.dataframe(pivot_df, use_container_width = True)
         
     # take last value in each column and add to master_df
     save_amounts = dict()
-    for col in table_df.columns:
-        save_amounts[col] = table_df[col].ffill().iloc[-1]
+    for col in pivot_df.columns:
+        save_amounts[col] = pivot_df[col].ffill().iloc[-1]
     save_df = pd.DataFrame.from_dict(save_amounts, orient = 'index', columns = ["Raw Value"])
     save_df["Currency"] = "SGD"
     master_df = master_df.append(save_df)

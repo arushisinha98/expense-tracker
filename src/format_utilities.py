@@ -6,6 +6,8 @@ from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
 pd.set_option('display.precision', 2)
+colors = ['#EEB64B','#FC9460','#E54264','#442261','#005B6E','#64A47F','#C3C48A']
+# bcolors = ['#03DAC6', '#CF6679']
 
 
 def format_table(df, column = "Amount"):
@@ -26,7 +28,7 @@ def format_table(df, column = "Amount"):
         print(e)
 
 
-def highlight(val, threshold = 0, bcolors = ['#03DAC6', '#CF6679']):
+def highlight(val, threshold = 0, bcolors = ['#64A47F','#C3C48A']):
     '''
     FUNCTION to choose which background color a cell with be highlighted with based on cell value
     '''
@@ -84,6 +86,44 @@ def horizontal_bar(chart_data, redact, size = 40):
 def local_css(filename):
     with open(f"{MASTER_DIRECTORY}/src/{filename}") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html = True)
+
+
+def vertical_bar(chart_data, redact, size = 20):
+    '''
+    FUNCTION to create a vertical stacked bar chart.
+    input: chart_data, the input dataframe
+    output: chart object
+    '''
+    try:
+        melt_df = pd.melt(chart_data.reset_index(), id_vars = ['Date'], value_vars = chart_data.columns)
+        
+        if redact:
+            chart = (
+                alt.Chart(melt_df)
+                .mark_bar(size = size)
+                .encode(
+                    x = alt.X("Date", title = ""),
+                    y = alt.Y("value", title = "", axis = None),
+                    color = alt.Color("Source",
+                                      scale = alt.Scale(range = colors[:len(chart_data.columns)]),
+                                      legend = None),
+                )
+            )
+        else:
+            chart = (
+                alt.Chart(melt_df)
+                .mark_bar(size = size)
+                .encode(
+                    x = alt.X("Date", title = ""),
+                    y = alt.Y("value", title = ""),
+                    color = alt.Color("Source",
+                                      scale = alt.Scale(range = colors[:len(chart_data.columns)]),
+                                      legend = alt.Legend(orient = 'bottom')),
+                )
+            )
+        return chart
+    except Exception as e:
+        print(e)
 
 
 def update_data_editor(original_data, compulsory_cols, update_session_tag = "edit_table"):

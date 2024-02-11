@@ -42,3 +42,8 @@ account_names = {
     'Treasury - iBonds' : 'USD',
     'E*TRADE - ESPP' : 'USD'
 }
+
+converter = {
+    'USD': 1,
+    'SGD': 0.74
+}

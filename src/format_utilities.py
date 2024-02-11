@@ -41,7 +41,7 @@ def highlight(val, threshold = 0, bcolors = ['#03DAC6', '#CF6679']):
         print(e)
         
 
-def horizontal_bar(chart_data, size = 40):
+def horizontal_bar(chart_data, redact, size = 40):
     '''
     FUNCTION to create a horizontal stacked bar chart.
     input: chart_data, the input dataframe
@@ -51,13 +51,19 @@ def horizontal_bar(chart_data, size = 40):
         chart_data.index = [""]
         data = pd.melt(chart_data.reset_index(), id_vars = ["index"])
         
+        if redact:
+            denom = sum(data['value'])*0.01
+            data['value'] /= denom
+        
+        xlabels = ["Total Spend", "Proportion of Spend"]
+        
         chart = (
             alt.Chart(data)
             .mark_bar(size = size)
             .encode(
                 x = alt.X("value",
                           type = "quantitative",
-                          title = ""),
+                          title = xlabels[redact]),
                 y = alt.Y("index",
                           type = "nominal",
                           title = ""),
@@ -69,6 +75,7 @@ def horizontal_bar(chart_data, size = 40):
                                   sort = "descending"),
             )
         )
+        
         return chart
     except Exception as e:
         print(e)

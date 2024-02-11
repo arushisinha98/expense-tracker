@@ -12,7 +12,7 @@ import pandas as pd
 import streamlit as st
 from annotated_text import annotated_text
 
-from constants import account_names, expense_categories, credit_categories, converter
+from constants import account_names, expense_categories, converter
 from dtype_conversions import float_to_str
 from format_utilities import format_table, update_data_editor
 from upload_utilities import clear_directory, search_data, process_upload, completed, save_data

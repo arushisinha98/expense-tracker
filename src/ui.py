@@ -14,7 +14,7 @@ sys.path.append(curr_dir)
 from constants import expense_categories
 from format_utilities import format_table, horizontal_bar, local_css
 from upload_utilities import clear_directory, search_data, process_upload, completed, save_data
-from dtype_conversions import float_to_str
+from dtype_conversions import float_to_str, redact_text
 from compile_utilities import compile_statements, category_table, balance_table
 
 from frontend import uploader, tabulator, calculator, show_cards
@@ -25,7 +25,7 @@ readme_tab, sg_tab, us_tab, summary_tab = st.tabs(["Upload", "Singapore", "Unite
 # clear data in uploads folder
 clear_directory()
 
-# initialize master_df
+# initialize master_df (to be used in calculator page)
 master_df = pd.DataFrame()
 
 with readme_tab:
@@ -34,28 +34,41 @@ with readme_tab:
 with sg_tab:
     st.header("🇸🇬 Singapore")
     
+    # create a checkbox to redact values
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    with col6:
+        redact = st.checkbox("**REDACT**", key = "redact_SG")
+    
+    # container 1: expense tracker
     with st.container(border = True):
-        
         date_col, summary_col = st.columns([1, 1])
         with date_col:
             period = st.date_input('Select Period',
                                    value = (date(date.today().year, 1, 1), date.today()),
                                    max_value = date.today(),
                                    format = "YYYY/MM/DD")
-                
             df = compile_statements('SG', period)
         
+        # display total spend & total investment annotation
         if not df is None:
-            # display total spend & total investment
             table = category_table(df, period)
             with summary_col:
                 st.write("""<h1> </h1>""", unsafe_allow_html = True)
-                annotated_text((float_to_str(table.sum(axis = 1).iloc[0] - table['Investment'][0]), "Spend"), "\t",
-                               (float_to_str(table['Investment'][0]), "Invest"))
+                spend = table.sum(axis = 1).iloc[0] - table['Investment'][0]
+                invest = table['Investment'][0]
+                
+                if redact:
+                    annotated_text(
+                        (redact_text(float_to_str(spend)), "Spend"), "\t",
+                        (redact_text(float_to_str(invest)), "Invest"))
+                else:
+                    annotated_text(
+                        (float_to_str(spend), "Spend"), "\t",
+                        (float_to_str(invest), "Invest"))
                                
             # horizontal bar of expense
             table.drop('Investment', axis = 1, inplace = True)
-            chart = horizontal_bar(table)
+            chart = horizontal_bar(table, redact)
             st.altair_chart(chart, use_container_width = True)
             
             # dataframe of transactions, filterable by category
@@ -71,7 +84,7 @@ with sg_tab:
                                  .loc[df["Category"].isin(filter_categories)]\
                                  .reset_index(drop = True), use_container_width = True)
     
-    show_cards("SG")
+    show_cards("SG", redact)
     
     with st.container(border = True):
         # account balance chart
@@ -97,7 +110,13 @@ with sg_tab:
     
 with us_tab:
     st.header("🇺🇸 United States")
-    show_cards("US")
+    
+    # create a checkbox to redact values
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    with col6:
+        redact = st.checkbox("**REDACT**", key = "redact_US")
+    
+    show_cards("US", redact)
 
 with summary_tab:
     calculator(master_df)

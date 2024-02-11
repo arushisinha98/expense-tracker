@@ -35,3 +35,13 @@ def float_to_str(dollars):
     output: dollars_string, output string
     '''
     return "{:,.2f}".format(dollars)
+
+
+def redact_text(dollars_string):
+    '''
+    FUNCTION to redact the numbers in a string and replace with 'X'
+    input: dollars_string, input string
+    output: redact_string, redacted string
+    '''
+    redact_string = re.sub(r'\d', "X", dollars_string)
+    return redact_string

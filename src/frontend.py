@@ -148,7 +148,7 @@ def calculator(master_df = pd.DataFrame()):
                 st.write(master_df)
 
 
-def show_cards(country):
+def show_cards(country, redact):
     assert country in ["SG", "US"]
     
     try:
@@ -158,27 +158,30 @@ def show_cards(country):
                 ccards, ctext = st.columns([1, 3])
                 with ccards:
                     st.image("images/hsbc-revolution.jpg", width = 175)
-                with ctext:
-                    st.caption("No Annual Fee | 3.25% Foreign Currency Transaction Fee")
-                    st.caption("4 miles per S\$1 up to S\$1,000/month, 0.4 miles per S$1 thereafter")
-                    st.caption("5:2 KrisFlyer Miles Conversion, S\$43.60 Annual Transfer Fee")
+                if not redact:
+                    with ctext:
+                        st.caption("No Annual Fee | 3.25% Foreign Currency Transaction Fee")
+                        st.caption("4 miles per S\$1 up to S\$1,000/month, 0.4 miles per S$1 thereafter")
+                        st.caption("5:2 KrisFlyer Miles Conversion, S\$43.60 Annual Transfer Fee")
             with cc2:
                 ccards, ctext = st.columns([1, 3])
                 with ccards:
                     st.image("images/ocbc-90nmastercard.png", width = 175)
-                with ctext:
-                    st.caption("S\$196.20 Annual Fee | 3.25% Foreign Currency Transaction Fee + Mastercard Fees (~1%)")
-                    st.caption("1.3 miles per S\$1 Local Spend, 2.1 miles per S\$1 Foreign Spend")
-                    st.caption("1:1 KrisFlyer / Flying Blue Miles Conversion, S\$25 Conversion Fee")
+                if not redact:
+                    with ctext:
+                        st.caption("S\$196.20 Annual Fee | 3.25% Foreign Currency Transaction Fee + Mastercard Fees (~1%)")
+                        st.caption("1.3 miles per S\$1 Local Spend, 2.1 miles per S\$1 Foreign Spend")
+                        st.caption("1:1 KrisFlyer / Flying Blue Miles Conversion, S\$25 Conversion Fee")
                 
             with cc3:
                 ccards, ctext = st.columns([1, 3])
                 with ccards:
                     st.image("images/sc-smart.jpg", width = 175)
-                with ctext:
-                    st.caption("No Annual Fee | 3.5% Foreign Currency Transaction Fee")
-                    st.caption("19.2 points per S\$1 on BUS/MRT, 1.6 points per S\$1 otherwise")
-                    st.caption("320 points = S\$1 | 1.015:1 KrisFlyer Miles Conversion, S\$26.75 Conversion Fee")
+                if not redact:
+                    with ctext:
+                        st.caption("No Annual Fee | 3.5% Foreign Currency Transaction Fee")
+                        st.caption("19.2 points per S\$1 on BUS/MRT, 1.6 points per S\$1 otherwise")
+                        st.caption("320 points = S\$1 | 1.015:1 KrisFlyer Miles Conversion, S\$26.75 Conversion Fee")
                     
         else:
             cc1, cc2 = st.tabs(["Chase United Gateway","Bank of America Travel Rewards"])
@@ -186,17 +189,19 @@ def show_cards(country):
                 ccards, ctext = st.columns([1, 3])
                 with ccards:
                     st.image("images/chase-unitedgateway.png", width = 175)
-                with ctext:
-                    st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
-                    st.caption("2 miles per \$1 on United® purchases, gas stations, local transit")
-                    st.caption("1 mile per \$1 otherwise")
+                if not redact:
+                    with ctext:
+                        st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
+                        st.caption("2 miles per \$1 on United® purchases, gas stations, local transit")
+                        st.caption("1 mile per \$1 otherwise")
             with cc2:
                 ccards, ctext = st.columns([1, 3])
                 with ccards:
                     st.image("images/boa-travelrewards.jpg", width = 175)
-                with ctext:
-                    st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
-                    st.caption("1.5 points per \$1 on all purchases")
+                if not redact:
+                    with ctext:
+                        st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
+                        st.caption("1.5 points per \$1 on all purchases")
                          
     except Exception as e:
         print(e)

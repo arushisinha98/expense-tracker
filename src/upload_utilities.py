@@ -62,14 +62,21 @@ def search_data(filename):
     - df, dataframe of pre-processed data if found, empty dataframe if not found
     '''
     try:
-        file = filename[:filename.rfind(".")] + '.csv'
+        # if search for filename with .csv extension
+        if "." in filename:
+            file = '/' + filename[:filename.rfind(".")] + '.csv'
+        else:
+            file = '/' + filename + '.csv'
+            
         filelist = list_files(MASTER_DIRECTORY)
         idx = [ff for ff in filelist if file in ff]
+        
         # if a single file found, return True and dataframe
         if idx and len(idx) == 1:
             df = pd.read_csv(idx[0])
             df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
             return True, df
+        
         # otherwise, return False and empty dataframe
         else:
             return False, pd.DataFrame()

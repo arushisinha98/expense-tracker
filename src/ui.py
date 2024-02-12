@@ -19,7 +19,7 @@ from compile_utilities import compile_statements, category_table, balance_table
 
 from frontend import uploader, tabulator, calculator, show_cards
 
-readme_tab, sg_tab, us_tab, summary_tab = st.tabs(["Upload", "Singapore", "United States", "Calculator"])
+data_tab, sg_tab, us_tab, summary_tab = st.tabs(["Upload", "Singapore", "United States", "Calculator"])
 
 # clear data in uploads folder
 clear_directory()
@@ -27,8 +27,22 @@ clear_directory()
 # initialize master_df (to be used in calculator page)
 master_df = pd.DataFrame()
 
-with readme_tab:
-    uploader()
+
+with data_tab:
+    st.header("📤 Upload Data")
+    
+    # display Expense Categories in expander
+    with st.expander("Expense Categories"):
+        st.write(f"""Categories are listed in `constants.py`.
+        *{expense_categories}*
+        """)
+        
+    st.caption("Add monthly bank, credit card, or investment statements to the database.")
+    uploader(border = True)
+    
+    st.caption("OR Manually tabulate data.")
+    tabulator(border = True)
+
 
 with sg_tab:
     st.header("🇸🇬 Singapore")
@@ -109,6 +123,7 @@ with sg_tab:
     save_df["Currency"] = "SGD"
     master_df = master_df.append(save_df)
     
+
 with us_tab:
     st.header("🇺🇸 United States")
     
@@ -118,6 +133,7 @@ with us_tab:
         redact = st.checkbox("**REDACT**", key = "redact_US")
     
     show_cards("US", redact)
+
 
 with summary_tab:
     calculator(master_df)

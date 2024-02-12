@@ -14,6 +14,15 @@ expense_categories = [
     'Unsure'
 ]
 
+tabs = {
+    'Singapore':
+        {'tag': 'SG',
+         'currency': 'SGD'},
+    'United States':
+        {'tag': 'US',
+         'currency': 'USD'}
+}
+
 converter = {
     'USD': 1,
     'SGD': 0.74

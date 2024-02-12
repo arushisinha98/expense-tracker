@@ -1,7 +1,10 @@
-import altair as alt
-import pandas as pd
 import numpy as np
+import pandas as pd
+from pandas.api.types import is_numeric_dtype
+import altair as alt
 import streamlit as st
+from annotated_text import annotated_text
+
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
@@ -9,7 +12,31 @@ pd.set_option('display.precision', 2)
 colors = ['#EEB64B','#FC9460','#E54264','#442261','#005B6E','#64A47F','#C3C48A']
 # bcolors = ['#03DAC6', '#CF6679']
 
+import os
+import sys
 
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
+
+from dtype_conversions import float_to_str
+
+
+def create_annotations(df, column, threshold, labels):
+    '''
+    FUNCTION to sum values in a dataframe column below and exceeding a threshold and creating two annotations to express these amounts
+    '''
+    assert column in df.columns and is_numeric_dtype(df[column])
+    assert len(labels) == 2
+    try:
+        return annotated_text(
+            (float_to_str(sum(df[column][df[column] < threshold])),labels[0]),
+            "\t",
+            (float_to_str(sum(df[column][df[column] >= threshold])), labels[1])
+            )
+    except Exception as e:
+        print(e)
+        
+        
 def format_table(df, column = "Amount"):
     '''
     FUNCTION to format a table by highlighting a cell in a column based on if it exceeds a value.

@@ -11,15 +11,19 @@ MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 import numpy as np
 import pandas as pd
 import streamlit as st
-from annotated_text import annotated_text
 
-from constants import expense_categories, converter
+from constants import expense_categories, tabs, converter
 from dtype_conversions import float_to_str
-from format_utilities import format_table, update_data_editor
+from format_utilities import create_annotations, format_table, update_data_editor
 from upload_utilities import search_data, process_upload, completed, save_data, list_files
-
-
+        
+        
+        
 def uploader(border = True):
+    '''
+    FUNCTION to create data uploader with backend logic to process, extract, and save data from uploaded statements.
+    '''
+    
     with st.container(border = border):
         # file uploader for statements
         uploaded_file = st.file_uploader("Upload a new statement", accept_multiple_files = False)
@@ -51,12 +55,10 @@ def uploader(border = True):
                 else:
                     st.write("⚠️ ERROR: Could not process file contents")
             
-            # show dataframe (either loaded or processed)
+            # show dataframe (either extracted or preprocessed)
             if "upload_data" in st.session_state:
                 df = st.session_state["upload_data"]
-                if "Amount" in df.columns:
-                    annotated_text((float_to_str(sum(df["Amount"][df["Amount"] < 0])), "Outgoing"), "\t",
-                                   (float_to_str(sum(df["Amount"][df["Amount"] >= 0])), "Incoming"))
+                create_annotations(df, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
                 df = format_table(df)
                 
                 # not editable if already preprocessed
@@ -80,7 +82,11 @@ def uploader(border = True):
                 st.session_state.pop("preprocessed")
             
             
+            
 def tabulator(border = True):
+    '''
+    FUNCTION to create manual data tabulator with backend logic to save data.
+    '''
     # initialize empty dataframe with columns: date, description, amount, category
     @st.cache_data
     def initialize_data() -> pd.DataFrame:
@@ -100,11 +106,9 @@ def tabulator(border = True):
         
         # radio: choose location tag
         with col1:
-            country = st.radio("Choose a location tag", ["Singapore","United States"], index = None)
-            if country == "Singapore":
-                tag = "SG"
-            else:
-                tag = "US"
+            country = st.radio("Choose a location tag", list(tabs.keys()))
+            if country:
+                tag = tabs[country]['tag']
         
         # text input: create filename
         with col2:
@@ -122,12 +126,12 @@ def tabulator(border = True):
         if country and filename and not bool:
             st.session_state["SubmitError"] = False
             if filename.count("/") == 1:
-                subdir = f"{MASTER_DIRECTORY}/data/{tag}/Manual/{filename[:filename.find('/')]}/"
+                subdir = f"{MASTER_DIRECTORY}/data/{tag}/{filename[:filename.find('/')]}/"
                 if not os.path.exists(subdir):
                     os.mkdir(subdir)
                 filepath = subdir + filename[filename.find('/')+1:] + '.csv'
             else:
-                filepath = os.getcwd() + f"/data/{tag}/Manual/{filename}.csv"
+                filepath = os.getcwd() + f"/data/{tag}/{filename}.csv"
         
         # editable dataframe for manual entry
         edited = st.data_editor(st.session_state["ManualTable"],
@@ -141,18 +145,18 @@ def tabulator(border = True):
             bool1 = edited.shape[0] == 0
             # incomplete/unfilled cells
             bool2 = any([pd.isnull(edited.loc[ix, col]) for ix in edited.index for col in edited.columns])
-            
             if filename and bool or bool1 or bool2:
                 return True
             else:
                 return False
         
+        create_annotations(edited, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
+        
         submit_button = st.button("Submit", disabled = disable_button(edited))
         if submit_button and st.session_state["SubmitError"]==False:
-            edited["Amount"] = edited["Amount"]*-1
             edited.reset_index().to_csv(filepath, index = True)
-            annotated_text((float_to_str(sum(edited["Amount"][edited["Amount"] < 0])), "Outgoing"))
-            st.write(f"Data uploaded to `~/data/{tag}/Manual/{filename}.csv`")
+            st.write(f"Data uploaded to `~/data/{tag}/{filename}.csv`")
+
 
 
 def calculator(master_df = pd.DataFrame()):
@@ -191,10 +195,10 @@ def calculator(master_df = pd.DataFrame()):
 
 
 def show_cards(country, redact):
-    assert country in ["SG", "US"]
+    assert country in list(tabs.keys())
     
     try:
-        if country == "SG":
+        if country == "Singapore":
             cc1, cc2, cc3 = st.tabs(["HSBC Revolution","OCBC 90°N","Standard Chartered Smart"])
             with cc1:
                 ccards, ctext = st.columns([1, 3])
@@ -225,7 +229,7 @@ def show_cards(country, redact):
                         st.caption("19.2 points per S\$1 on BUS/MRT, 1.6 points per S\$1 otherwise")
                         st.caption("320 points = S\$1 | 1.015:1 KrisFlyer Miles Conversion, S\$26.75 Conversion Fee")
                     
-        else:
+        elif country == "United States":
             cc1, cc2 = st.tabs(["Chase United Gateway","Bank of America Travel Rewards"])
             with cc1:
                 ccards, ctext = st.columns([1, 3])
@@ -244,6 +248,9 @@ def show_cards(country, redact):
                     with ctext:
                         st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
                         st.caption("1.5 points per \$1 on all purchases")
-                         
+                        
+        else:
+            st.caption("_Could not display credit cards._")
+            
     except Exception as e:
         print(e)

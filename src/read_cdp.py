@@ -5,6 +5,7 @@ import numpy as np
 from dtype_conversions import str_to_float
 from pdf_utilities import extract_text, select_text
 
+
 class CDPStatement:
     '''
     CLASS OBJECT for CDP Account Statement.

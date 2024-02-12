@@ -48,26 +48,26 @@ def README():
                 
                 placeholder_tabs = {'United States': {'tag': "US", 'currency': "USD"}}
                 
-                st.write("`tabs` is a dictionary that is used to organize the backend data and frontend visualizations by currency and/or location. The dictionary requires details including the name of the tab, its short-hand tag, and its currency. Use the following structure:")
+                st.write("`tabs` is a dictionary that is used to organize the backend data and frontend visualizations by currency and/or location. The dictionary requires details including the name of the tab, its short-hand tag, and its associated currency. Use the following structure:")
                 st.write(placeholder_tabs)
                 
                 placeholder_converter = {"USD": 1}
                 
-                st.write("`converter` is a dictionary with currencies as keys and the conversion rate to a common base currency as values. Be sure to include ALL currencices that were declared in `tabs`. Here is an example to go with the one above:")
+                st.write("`converter` is a dictionary with currencies as keys and the conversion rate to a common base currency as values. Be sure to include _all_ currencies that were declared in `tabs`. Here is an example to go with the one above:")
                 st.write(placeholder_converter)
             
             # prepare data directory
             st.checkbox("**Prepare the data directory to match `tabs`.**", key = "check2")
             
             with st.container(border = True):
-                st.write("All the data for your app will be in `../data/`. Within this folder, make sure that there exists a subdirectory for uploads as well as one for _each_ tag in that was initialized in `tabs`. Here is an example of what it should look like:")
+                st.write("All the data for your app will be in `../data/`. Within this folder, make sure that there exists a subdirectory for uploads as well as one for _each_ tag that was initialized in `tabs`. Here is an example of what it should look like:")
                 st.write(['../data/uploads/','../data/US/'])
             
             # some notes
             st.write("*Note that you will need to configure the logic for uploading and saving data from your bank, credit card, and investment statements. However, once you have completed the above steps, the manual data entry should work just fine!*")
             
         with Example:
-            st.write("Here are some static screenshots of what the financial app looks like when it us up and running.")
+            st.write("Here are some static screenshots of what the financial app looks like when it is up and running.")
             
             with st.container(border = True):
                 st.image('../screenshots/upload.png')

@@ -54,30 +54,45 @@ def horizontal_bar(chart_data, redact, size = 40):
         data = pd.melt(chart_data.reset_index(), id_vars = ["index"])
         
         if redact:
-            denom = sum(data['value'])*0.01
-            data['value'] /= denom
-        
-        xlabels = ["Total Spend", "Proportion of Spend"]
-        
-        chart = (
-            alt.Chart(data)
-            .mark_bar(size = size)
-            .encode(
-                x = alt.X("value",
-                          type = "quantitative",
-                          title = xlabels[redact]),
-                y = alt.Y("index",
-                          type = "nominal",
-                          title = ""),
-                color = alt.Color("variable",
-                                  type = "nominal",
-                                  title = "",
-                                  legend = alt.Legend(orient = 'top', columns = 3)),
-                order = alt.Order("variable",
-                                  sort = "descending"),
+            chart = (
+                alt.Chart(data)
+                .mark_bar(size = size)
+                .encode(
+                    x = alt.X("value",
+                              type = "quantitative",
+                              title = "",
+                              axis = None),
+                    y = alt.Y("index",
+                              type = "nominal",
+                              title = ""),
+                    color = alt.Color("variable",
+                                      type = "nominal",
+                                      title = "",
+                                      legend = alt.Legend(orient = 'top', columns = 3)),
+                    order = alt.Order("variable",
+                                      sort = "descending"),
+                )
             )
-        )
-        
+            
+        else:
+            chart = (
+                alt.Chart(data)
+                .mark_bar(size = size)
+                .encode(
+                    x = alt.X("value",
+                              type = "quantitative",
+                              title = ""),
+                    y = alt.Y("index",
+                              type = "nominal",
+                              title = ""),
+                    color = alt.Color("variable",
+                                      type = "nominal",
+                                      title = "",
+                                      legend = alt.Legend(orient = 'top', columns = 3)),
+                    order = alt.Order("variable",
+                                      sort = "descending"),
+                )
+            )
         return chart
     except Exception as e:
         print(e)

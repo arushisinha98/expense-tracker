@@ -58,9 +58,9 @@ def uploader(border = True):
             # show dataframe (either extracted or preprocessed)
             if "upload_data" in st.session_state:
                 df = st.session_state["upload_data"]
-                create_annotations(df, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
+                if "Amount" in df.columns:
+                    create_annotations(df, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
                 df = format_table(df)
-                
                 # not editable if already preprocessed
                 if st.session_state["preprocessed"]:
                     classified_df = st.data_editor(df, num_rows = 'fixed', disabled = True, use_container_width = True)
@@ -68,7 +68,7 @@ def uploader(border = True):
                     classified_df = st.data_editor(df, num_rows = 'fixed', disabled = ('Date','Amount','Balance'), use_container_width = True)
                     
                     # save in same directory as raw data file
-                    save = st.button("Submit", disabled = completed(classified_df)==False)
+                    save = st.button("Upload", disabled = completed(classified_df)==False, key = "AutoUpload")
                     if save:
                         save_data(classified_df, uploaded_file.name)
                         
@@ -87,6 +87,8 @@ def tabulator(border = True):
     '''
     FUNCTION to create manual data tabulator with backend logic to save data.
     '''
+    # TODO: update_data_editor to save latest iteration of manual table
+    
     # initialize empty dataframe with columns: date, description, amount, category
     @st.cache_data
     def initialize_data() -> pd.DataFrame:
@@ -152,7 +154,7 @@ def tabulator(border = True):
         
         create_annotations(edited, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
         
-        submit_button = st.button("Submit", disabled = disable_button(edited))
+        submit_button = st.button("Submit", disabled = disable_button(edited), key = "ManualUpload")
         if submit_button and st.session_state["SubmitError"]==False:
             edited.reset_index().to_csv(filepath, index = True)
             st.write(f"Data uploaded to `~/data/{tag}/{filename}.csv`")
@@ -161,7 +163,7 @@ def tabulator(border = True):
 
 def calculator(master_df = pd.DataFrame()):
     st.header("⚖️ Calculator")
-    st.caption("Manually fill out account values to compute total net worth in USD.")
+    st.caption("Manually add, remove or edit account values and compute total net worth in USD.")
 
     with st.container():
         st.caption("⏰ Estimated time: 10 minutes")
@@ -178,20 +180,24 @@ def calculator(master_df = pd.DataFrame()):
         
         edited = st.data_editor(st.session_state["CalculatorTable"],
                                 key = "edit_table",
-                                num_rows = 'dynamic') # run update_data_editor on_change?
+                                num_rows = 'dynamic',
+                                use_container_width = True,
+                                column_config = {
+                                    "Currency": st.column_config.SelectboxColumn(options = converter.keys())}
+                                ) # TODO: on_change = run update_data_editor and compute running total
         
-        submit_button = st.button("Compute Total")
+        submit_button = st.button("Export", key = "Export")
         
         if submit_button:
             master_df = update_data_editor(master_df,
-                                            compulsory_cols = ['Account', 'Raw Value', 'Currency'],
-                                            update_session_tag = 'edit_table')
+                                           compulsory_cols = ['Account', 'Raw Value', 'Currency'],
+                                           update_session_tag = 'edit_table')
             master_df["Balance in USD"] = master_df.apply(lambda x: f(x['Raw Value'], x['Currency']), axis = 1)
             st.session_state["CalculatorTable"] = master_df
             st.write(f"Total: ${float_to_str(sum(master_df['Balance in USD']))}")
+            date_tag = datetime.today().strftime('%Y-%m-%d')
+            master_df.to_csv(f"{MASTER_DIRECTORY}/data/Calculator/{date_tag}_export.csv")
             
-            with st.expander("View Details"):
-                st.write(master_df)
 
 
 def show_cards(country, redact):

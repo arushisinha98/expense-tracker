@@ -65,9 +65,8 @@ def MAIN():
                                            format = "YYYY/MM/DD",
                                            key = f"date_input{ii}")
                     df = compile_statements(country, period)
-                
                 # display total spend & investment annotation
-                if not df is None:
+                if not df is None and df.shape[0] > 0:
                     table = category_table(df, period)
                     with summary_col:
                         st.write("""<h1> </h1>""", unsafe_allow_html = True)
@@ -100,7 +99,7 @@ def MAIN():
                             st.dataframe(df[["Date","Source","Description","Amount","Category"]]\
                                          .loc[df["Category"].isin(filter_categories)]\
                                          .reset_index(drop = True), use_container_width = True)
-            
+                    
             # details of active credit cards
             show_cards(country, redact)
             
@@ -109,7 +108,7 @@ def MAIN():
                 # vertical bar of balance
                 df = compile_statements(country, (date(1998,10,10), date.today()))
                 
-                if not df is None:
+                if not df is None and df.shape[0] > 0:
                     series = balance_table(df, (date(1998,10,10), date.today()))
                     pivot_df = pd.pivot_table(series, values = 'Balance', index = ['Date'],
                                               columns = ['Source'], aggfunc = "mean")
@@ -118,9 +117,10 @@ def MAIN():
                     st.altair_chart(chart, use_container_width = True)
                     
                     # dataframe of accounts
+                    
                     with st.expander("View Details"):
                         st.dataframe(pivot_df, use_container_width = True)
-                
+                        
                     # take last value in each column and add to master_df
                     save_amounts = dict()
                     for col in pivot_df.columns:
@@ -128,11 +128,11 @@ def MAIN():
                     save_df = pd.DataFrame.from_dict(save_amounts, orient = 'index', columns = ["Raw Value"])
                     save_df["Currency"] = tabs[country]['currency']
                     master_df = master_df.append(save_df)
-
-
+    
+    
     with tab_content[-1]:
         calculator(master_df)
-
+    
 
 
 

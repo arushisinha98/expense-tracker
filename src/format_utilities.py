@@ -25,7 +25,7 @@ def create_annotations(df, column, threshold, labels):
     '''
     FUNCTION to sum values in a dataframe column below and exceeding a threshold and creating two annotations to express these amounts
     '''
-    assert column in df.columns and is_numeric_dtype(df[column])
+    assert column in df.columns
     assert len(labels) == 2
     try:
         return annotated_text(
@@ -55,7 +55,7 @@ def format_table(df, column = "Amount"):
         print(e)
 
 
-def highlight(val, threshold = 0, bcolors = ['#64A47F','#C3C48A']):
+def highlight(val, threshold = 0, bcolors = ['#03DAC6', '#CF6679']):
     '''
     FUNCTION to choose which background color a cell with be highlighted with based on cell value
     '''

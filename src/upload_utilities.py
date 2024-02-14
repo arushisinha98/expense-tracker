@@ -1,6 +1,4 @@
-import fitz
 import os
-from datetime import datetime
 import pandas as pd
 
 from decouple import config
@@ -47,8 +45,8 @@ def list_files(directory = MASTER_DIRECTORY):
         path = os.getcwd()
         filelist = []
         for root, dirs, files in os.walk(path):
-                for ff in files:
-                    filelist.append(os.path.join(root,ff))
+            for ff in files:
+                filelist.append(os.path.join(root,ff))
         return filelist
     except Exception as e:
         print(e)
@@ -62,7 +60,7 @@ def search_data(filename):
     - df, dataframe of pre-processed data if found, empty dataframe if not found
     '''
     try:
-        # if search for filename with .csv extension
+        # search for filename with .csv extension
         if "." in filename:
             file = '/' + filename[:filename.rfind(".")] + '.csv'
         else:

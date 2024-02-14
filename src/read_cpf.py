@@ -1,12 +1,9 @@
-import fitz
-import os
 from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from pdf_utilities import extract_text, select_text, invert_select_text
 from dtype_conversions import str_to_float
-from constants import expense_categories
+from pdf_utilities import extract_text, select_text, invert_select_text
 
 from decouple import config
 MY_NAME = config('MY_NAME')

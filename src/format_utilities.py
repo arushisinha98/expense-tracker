@@ -1,6 +1,4 @@
-import numpy as np
 import pandas as pd
-from pandas.api.types import is_numeric_dtype
 import altair as alt
 import streamlit as st
 from annotated_text import annotated_text
@@ -8,17 +6,12 @@ from annotated_text import annotated_text
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
+from dtype_conversions import float_to_str
+
+
 pd.set_option('display.precision', 2)
 colors = ['#EEB64B','#FC9460','#E54264','#442261','#005B6E','#64A47F','#C3C48A']
 # bcolors = ['#03DAC6', '#CF6679']
-
-import os
-import sys
-
-curr_dir = os.path.dirname(__file__)
-sys.path.append(curr_dir)
-
-from dtype_conversions import float_to_str
 
 
 def create_annotations(df, column, threshold, labels):

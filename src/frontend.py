@@ -1,24 +1,18 @@
 import os
-import sys
-from datetime import datetime, date
-
-curr_dir = os.path.dirname(__file__)
-sys.path.append(curr_dir)
+from datetime import datetime
+import pandas as pd
+import streamlit as st
 
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
-import numpy as np
-import pandas as pd
-import streamlit as st
-
 from constants import expense_categories, tabs, converter
 from dtype_conversions import float_to_str
 from format_utilities import create_annotations, format_table, update_data_editor
-from upload_utilities import search_data, process_upload, completed, save_data, list_files
-        
-        
-        
+from upload_utilities import search_data, process_upload, completed, save_data
+
+
+
 def uploader(border = True):
     '''
     FUNCTION to create data uploader with backend logic to process, extract, and save data from uploaded statements.

@@ -1,16 +1,13 @@
-import fitz
-import os
 from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from pdf_utilities import extract_text, select_text, invert_select_text
 from dtype_conversions import str_to_float
+from pdf_utilities import extract_text, select_text, invert_select_text
 from constants import expense_categories
 
 from decouple import config
 FD = config('FD')
-SRS = config('SRS')
 
 class DBSStatement:
     '''

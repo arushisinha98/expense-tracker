@@ -1,13 +1,6 @@
-from datetime import datetime
 import os
-import sys
-import streamlit as st
-
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
-
-curr_dir = os.path.dirname(__file__)
-sys.path.append(curr_dir)
 
 from constants import expense_categories, tabs, converter
 from app import README, MAIN
@@ -25,16 +18,17 @@ def main():
     assert all([os.path.exists(f"{MASTER_DIRECTORY}/data/{tab['tag']}/") for tab in tabs.values()])
     # check data dirctory contains uploads folder
     assert os.path.exists(f"{MASTER_DIRECTORY}/data/uploads/")
-
+    
     # check expense_categories is list
     assert isinstance(expense_categories, list)
     
     try:
-        MAIN()
-    
-    except AssertionError as e:
-        os.chdir(MASTER_DIRECTORY)
+        #MAIN()
         README()
+        
+    except Exception as e:
+        #README()
+        print(e)
 
 
 if __name__ == '__main__':

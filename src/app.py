@@ -1,15 +1,11 @@
-from datetime import date
 import os
-import sys
-
-curr_dir = os.path.dirname(__file__)
-sys.path.append(curr_dir)
-
-import numpy as np
+from datetime import date
 import pandas as pd
 import streamlit as st
 from annotated_text import annotated_text
-import altair as alt
+
+from decouple import config
+MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
 from constants import expense_categories, tabs
 from format_utilities import horizontal_bar, vertical_bar
@@ -21,7 +17,9 @@ from frontend import uploader, tabulator, calculator, show_cards
 
 def MAIN():
     # create tabs
-    tab_names = ["Upload"] + list(tabs.keys()) + ["Calculator"]
+    tab_names = ["Upload"] + list(tabs.keys())
+    if os.path.exists(f"{MASTER_DIRECTORY}/data/Calculator/"):
+        tab_names +=  ["Calculator"]
     tab_content = st.tabs(tab_names)
 
     # clear data in uploads folder
@@ -51,9 +49,7 @@ def MAIN():
             st.header(f"{country}")
             
             # create a checkbox to redact $$ values
-            col1, col2, col3, col4, col5, col6 = st.columns(6)
-            with col6:
-                redact = st.checkbox("**REDACT**", key = f"redact{ii}")
+            redact = st.toggle("**REDACT**", key = f"redact{ii}")
             
             # expense tracker
             with st.container(border = True):
@@ -130,8 +126,9 @@ def MAIN():
                     master_df = master_df.append(save_df)
     
     
-    with tab_content[-1]:
-        calculator(master_df)
+    if "Calculator" in tab_names:
+        with tab_content[-1]:
+            calculator(master_df)
     
 
 
@@ -144,41 +141,43 @@ def README():
         README, Example = st.tabs(["README", "Example"])
         
         with README:
-            st.header("Welcome!")
-            st.write("Thanks for checking out my personal project on GitHub. Before you start using my source code to build your own financial planning app, you'll need to make a few adjustments. Once you have completed the checklist, refresh your browser window.")
+            st.header("HELLO!")
+            st.subheader("If you're seeing this, your app isn't quite ready yet.")
+            st.write("Before you start using my source code to build your own financial planning app, you'll need to make a few adjustments. Here's a basic checklist. Once you have completed these items, refresh your browser window.")
             
             # prepare constants.py file
-            st.checkbox("**Open `constants.py` and initialize these three variables: `expense_categories`, `tabs`, and `converter`.**", key = "check1")
+            st.checkbox("**Open `constants.py` and initialize `expense_categories`, `tabs`, and `converter`.**", key = "check1")
             
             with st.container(border = True):
                 placeholder_expense_categories = ['Groceries','Dining','Transport','Entertainment','Investment','Taxes / Bills','Rent','Others']
 
-                st.write("`expense_categories` is a list categories to help you classify your expenses and/or outgoing transactions. Here is an example to get you started:")
+                st.write("`expense_categories` is a *LIST* of categories to help you classify your expenses and/or outgoing transactions. Here is an example to get you started:")
                 st.write(placeholder_expense_categories)
                 
                 placeholder_tabs = {'United States': {'tag': "US", 'currency': "USD"}}
                 
-                st.write("`tabs` is a dictionary that is used to organize the backend data and frontend visualizations by currency and/or location. The dictionary requires details including the name of the tab, its short-hand tag, and its associated currency. Use the following structure:")
+                st.write("`tabs` is a *DICTIONARY* that is used to organize the backend data and frontend visualizations by currency and/or location. The dictionary minimally requires details including the name of the tab, its short-hand tag, and its associated currency. Use the following structure:")
                 st.write(placeholder_tabs)
                 
                 placeholder_converter = {"USD": 1}
                 
-                st.write("`converter` is a dictionary with currencies as keys and the conversion rate to a common base currency as values. Be sure to include _all_ currencies that were declared in `tabs`. Here is an example to go with the one above:")
+                st.write("`converter` is a *DICTIONARY* with currencies as keys and the conversion rate to a common base currency as values. Be sure to include _all_ currencies that were declared in `tabs`. Here is an example to go with the one above:")
                 st.write(placeholder_converter)
             
             # prepare data directory
-            st.checkbox("**Prepare the data directory to match `tabs`.**", key = "check2")
+            st.checkbox("**Prepare the data directory.**", key = "check2")
             
             with st.container(border = True):
                 st.write("All the data for your app will be in `../data/`. Within this folder, make sure that there exists a subdirectory for uploads as well as one for _each_ tag that was initialized in `tabs`. Here is an example of what it should look like:")
                 st.write(['../data/uploads/','../data/US/'])
+                st.write("BONUS: If you add a subdirectory `../data/Calculator`, you'll unlock a new tab that tabulates and sums your balance across accounts.")
             
             # some notes
             st.write("*Note that you will need to configure the logic for uploading and saving data from your bank, credit card, and investment statements. However, once you have completed the above steps, the manual data entry should work just fine!*")
             
         
         with Example:
-            st.write("Here are some static screenshots of what the financial app looks like when it is up and running.")
+            st.write("Here are some screenshots of what the financial app looks like when it is up and running.")
             
             with st.container(border = True):
                 st.image('screenshots/upload.png')

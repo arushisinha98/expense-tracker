@@ -123,7 +123,7 @@ def local_css(filename):
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html = True)
 
 
-def vertical_bar(chart_data, redact, size = 20):
+def vertical_bar(chart_data, redact):
     '''
     FUNCTION to create a vertical stacked bar chart.
     input: chart_data, the input dataframe
@@ -131,6 +131,7 @@ def vertical_bar(chart_data, redact, size = 20):
     '''
     try:
         melt_df = pd.melt(chart_data.reset_index(), id_vars = ['Date'], value_vars = chart_data.columns)
+        size = melt_df.shape[0]/5.5
         
         if redact:
             chart = (

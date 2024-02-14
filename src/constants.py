@@ -10,7 +10,7 @@ expense_categories = [
     'Credit Card',
     'Personal',
     'Taxes / Bills',
-    'Rent',
+    'Rent / Mortgage',
     'Unsure'
 ]
 

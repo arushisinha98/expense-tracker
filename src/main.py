@@ -23,11 +23,10 @@ def main():
     assert isinstance(expense_categories, list)
     
     try:
-        #MAIN()
-        README()
+        MAIN()
         
     except Exception as e:
-        #README()
+        README()
         print(e)
 
 

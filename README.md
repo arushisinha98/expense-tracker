@@ -8,4 +8,5 @@ Here are some static screenshots of what the financial app looks like when it is
 
 To get started, follow the steps outlined in the README tab. Once you have completed these steps, refresh the window and the tab should disappear.
 
-![Alt text](screenshots/README.png "README")
+![Alt text](screenshots/README1.png "README1")
+![Alt text](screenshots/README2.png "README2")

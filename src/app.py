@@ -46,7 +46,10 @@ def MAIN():
     
     for ii, country in enumerate(tabs.keys()):
         with tab_content[ii+1]:
-            st.header(f"{country}")
+            if 'emoji' in tabs[country].keys():
+                st.header(f"{tabs[country]['emoji']} {country}")
+            else:
+                st.header(f"{country}")
             
             # create a checkbox to redact $$ values
             redact = st.toggle("**REDACT**", key = f"redact{ii}")

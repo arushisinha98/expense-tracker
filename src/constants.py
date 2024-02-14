@@ -17,10 +17,12 @@ expense_categories = [
 tabs = {
     'Singapore':
         {'tag': 'SG',
-         'currency': 'SGD'},
+         'currency': 'SGD',
+         'emoji': '🇸🇬'},
     'United States':
         {'tag': 'US',
-         'currency': 'USD'}
+         'currency': 'USD',
+         'emoji': '🇺🇸'}
 }
 
 converter = {

@@ -1,5 +1,10 @@
+import os
+import sys
 from datetime import datetime
 import pandas as pd
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
 from dtype_conversions import str_to_float
 from pdf_utilities import extract_text, select_text

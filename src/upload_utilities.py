@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 
 from decouple import config
@@ -7,6 +8,9 @@ MY_NAME = config('MY_NAME')
 DBS, OCBC, IBKR, Endowus = config('DBS'), config('OCBC'), config('IBKR'), config('Endowus')
 FD, SRS = config('FD'), config('SRS')
 CPF, CDP = config('CPF'), config('CDP')
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
 from pdf_utilities import extract_text
 from read_dbs import DBSStatement, SRSStatement, FDStatement
@@ -66,7 +70,7 @@ def search_data(filename):
         else:
             file = '/' + filename + '.csv'
             
-        filelist = list_files(MASTER_DIRECTORY)
+        filelist = list_files(f"{MASTER_DIRECTORY}/data/")
         idx = [ff for ff in filelist if file in ff]
         
         # if a single file found, return True and dataframe

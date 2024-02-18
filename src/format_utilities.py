@@ -1,3 +1,5 @@
+import os
+import sys
 import pandas as pd
 import altair as alt
 import streamlit as st
@@ -5,6 +7,9 @@ from annotated_text import annotated_text
 
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
 from dtype_conversions import float_to_str
 

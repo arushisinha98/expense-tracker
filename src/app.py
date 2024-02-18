@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import date
 import pandas as pd
 import streamlit as st
@@ -6,6 +7,9 @@ from annotated_text import annotated_text
 
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
 from constants import expense_categories, tabs
 from format_utilities import horizontal_bar, vertical_bar

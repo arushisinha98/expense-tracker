@@ -1,10 +1,14 @@
 import os
+import sys
 from datetime import datetime
 import pandas as pd
 import streamlit as st
 
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
 from constants import expense_categories, tabs, converter
 from dtype_conversions import float_to_str
@@ -85,41 +89,68 @@ def tabulator(border = True):
     
     # initialize empty dataframe with columns: date, description, amount, category
     @st.cache_data
-    def initialize_data() -> pd.DataFrame:
-        df = pd.DataFrame(columns = ["Date","Description","Amount","Category"])
-        df["Date"] = df["Date"].astype("datetime64")
-        df["Amount"] = df["Amount"].astype("float64")
-        return df.set_index("Date")
+    def initialize_data(tabletype) -> pd.DataFrame:
+        assert tabletype in ['Expense','Balance']
         
-    if "ManualTable" not in st.session_state:
-        st.session_state["ManualTable"] = initialize_data()
+        try:
+            if tabletype == 'Expense':
+                df = pd.DataFrame(columns = ["Date","Description","Amount","Category"])
+                df["Date"] = df["Date"].astype("datetime64")
+                df["Amount"] = df["Amount"].astype("float64")
+            else:
+                df = pd.DataFrame(columns = ["Date","Balance"])
+                df["Date"] = df["Date"].astype("datetime64")
+                df["Balance"] = df["Balance"].astype("float64")
+            return df.set_index("Date")
+        except Exception as e:
+            print(e)
         
     if "SubmitError" not in st.session_state:
         st.session_state["SubmitError"] = False
+    if "ManualTable" not in st.session_state:
+        st.session_state["ManualTable"] = initialize_data('Expense')
     
     with st.container(border = border):
-        col1, col2 = st.columns([1,1])
+        col1, col2 = st.columns([1,2])
         
         # radio: choose location tag
         with col1:
             country = st.radio("Choose a location tag", list(tabs.keys()))
-            if country:
-                tag = tabs[country]['tag']
+            tag = tabs[country]['tag']
+                
+        # radio: choose table type
+        with col2:
+            tabletype = st.radio("Choose a table type", ['Expense','Balance'])
+            st.session_state["ManualTable"] = initialize_data(tabletype)
+                
+        # editable dataframe for manual entry
+        if tabletype == 'Expense':
+            edited = st.data_editor(st.session_state["ManualTable"],
+                        use_container_width = True, num_rows = 'dynamic',
+                        column_config = {"Date": st.column_config.DateColumn(),
+                                         "Category": st.column_config.SelectboxColumn(options = expense_categories)
+                                        }
+                        )
+            create_annotations(edited, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
+        else:
+            edited = st.data_editor(st.session_state["ManualTable"],
+                        use_container_width = True, num_rows = 'dynamic',
+                        column_config = {"Date": st.column_config.DateColumn()}
+                        )
         
         # text input: create filename
-        with col2:
-            filename = st.text_input("Create filename", "")
-            if filename:
-                bool, df = search_data(filename)
-                if bool:
-                    st.write("⚠️ A file with this name already exists.")
-                    st.session_state["SubmitError"] = True
-                if filename.count("/") > 1:
-                    st.write("⚠️ Only one sub-directory may be created.")
-                    st.session_state["SubmitError"] = True
+        filename = st.text_input("Create filename", placeholder = "e.g. HSBC/FEB-2024")
+        if filename:
+            bool, df = search_data(filename)
+            if bool:
+                st.write("⚠️ A file with this name already exists.")
+                st.session_state["SubmitError"] = True
+            if filename.count("/") != 1:
+                st.write("⚠️ Only one sub-directory may be created.")
+                st.session_state["SubmitError"] = True
         
         # get filepath to save manual data
-        if country and filename and not bool:
+        if country and tabletype and filename and not bool:
             st.session_state["SubmitError"] = False
             if filename.count("/") == 1:
                 subdir = f"{MASTER_DIRECTORY}/data/{tag}/{filename[:filename.find('/')]}/"
@@ -128,14 +159,7 @@ def tabulator(border = True):
                 filepath = subdir + filename[filename.find('/')+1:] + '.csv'
             else:
                 filepath = os.getcwd() + f"/data/{tag}/{filename}.csv"
-        
-        # editable dataframe for manual entry
-        edited = st.data_editor(st.session_state["ManualTable"],
-                    use_container_width = True, num_rows = 'dynamic',
-                    column_config = {"Date": st.column_config.DateColumn(),
-                                     "Category": st.column_config.SelectboxColumn(options = expense_categories)}
-                                     )
-    
+
         def disable_button(edited):
             # no rows added
             bool1 = edited.shape[0] == 0
@@ -145,9 +169,7 @@ def tabulator(border = True):
                 return True
             else:
                 return False
-        
-        create_annotations(edited, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
-        
+    
         submit_button = st.button("Submit", disabled = disable_button(edited), key = "ManualUpload")
         if submit_button and st.session_state["SubmitError"]==False:
             edited.reset_index().to_csv(filepath, index = True)

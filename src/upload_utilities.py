@@ -38,7 +38,7 @@ def clear_directory(path = f"{MASTER_DIRECTORY}/data/uploads/"):
         print(e)
 
 
-def list_files(directory = MASTER_DIRECTORY):
+def list_files(directory = f"{MASTER_DIRECTORY}/data/"):
     '''
     FUNCTION to list all the files in a directory.
     input: directory, root as a string
@@ -55,6 +55,7 @@ def list_files(directory = MASTER_DIRECTORY):
     except Exception as e:
         print(e)
     
+    
 def search_data(filename):
     '''
     FUNCTION to search if a file is already in database and if a pre-processed version can be used.
@@ -69,7 +70,7 @@ def search_data(filename):
             file = '/' + filename[:filename.rfind(".")] + '.csv'
         else:
             file = '/' + filename + '.csv'
-            
+        
         filelist = list_files(f"{MASTER_DIRECTORY}/data/")
         idx = [ff for ff in filelist if file in ff]
         

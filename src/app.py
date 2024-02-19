@@ -25,10 +25,7 @@ def MAIN():
     if os.path.exists(f"{MASTER_DIRECTORY}/data/Calculator/"):
         tab_names +=  ["Calculator"]
     tab_content = st.tabs(tab_names)
-
-    # clear data in uploads folder
-    clear_directory()
-
+    
     # initialize master_df (to be used in calculator page)
     master_df = pd.DataFrame()
 
@@ -40,13 +37,12 @@ def MAIN():
             st.write(f"""Categories are listed in `constants.py`.
             *{expense_categories}*
             """)
-            
+        
         st.caption("Add monthly bank, credit card, or investment statements to the database.")
         uploader(border = True)
         
         st.caption("OR Manually tabulate data.")
         tabulator(border = True)
-        
     
     for ii, country in enumerate(tabs.keys()):
         with tab_content[ii+1]:

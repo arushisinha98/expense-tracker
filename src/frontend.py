@@ -13,7 +13,7 @@ sys.path.append(curr_dir)
 from constants import expense_categories, tabs, converter
 from dtype_conversions import float_to_str
 from format_utilities import create_annotations, format_table, update_data_editor
-from upload_utilities import search_data, process_upload, completed, save_data
+from upload_utilities import search_data, process_upload, completed, save_data, list_files
 
 
 
@@ -37,11 +37,11 @@ def uploader(border = True):
                     st.session_state["upload_data"] = df
                 if "preprocessed" not in st.session_state:
                     st.session_state["preprocessed"] = True
-            
+                    
             # if file not found, create processed dataframe and save in relevant data folder
             else:
                 bytes_data = uploaded_file.read()
-                with open(f"data/uploads/{uploaded_file.name}", 'wb') as f:
+                with open(f"{MASTER_DIRECTORY}/data/uploads/{uploaded_file.name}", 'wb') as f:
                     f.write(bytes_data)
                 statement = process_upload(f"{uploaded_file.name}", bytes_data)
                 if statement:

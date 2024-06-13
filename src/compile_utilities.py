@@ -1,12 +1,15 @@
 import os
-from datetime import date, datetime, timedelta
+import sys
+from datetime import datetime
 import pandas as pd
 
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
-from constants import expense_categories
-from upload_utilities import list_files
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
+
+from constants import expense_categories, tabs
 
 
 def compile_statements(country, period, exclude = ['paystubs.csv']):
@@ -16,11 +19,11 @@ def compile_statements(country, period, exclude = ['paystubs.csv']):
     - country, the subfolder to be searched and compiled
     - exclude, a list of files that are to be excluded
     '''
-    assert country in ['SG','USA']
+    assert country in list(tabs.keys())
     try:
         # compile data for specified country
         os.chdir(MASTER_DIRECTORY)
-        path = os.getcwd() + f"/data/{country}/"
+        path = os.getcwd() + f"/data/{tabs[country]['tag']}/"
         filelist = []
         for root, dirs, files in os.walk(path):
             for ff in files:
@@ -32,7 +35,7 @@ def compile_statements(country, period, exclude = ['paystubs.csv']):
         for file in filelist:
             df = pd.read_csv(file)
             if "Source" not in df.columns:
-                df["Source"] = file[file.find(f"{country}/")+3:file.rfind("/")]
+                df["Source"] = file[file.find(f"{tabs[country]['tag']}/")+3:file.rfind("/")]
             master_df = master_df.append(df)
         master_df = master_df.loc[:, ~master_df.columns.str.contains('^Unnamed')]
         master_df.sort_values(by = "Date", inplace = True)

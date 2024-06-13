@@ -10,9 +10,20 @@ expense_categories = [
     'Credit Card',
     'Personal',
     'Taxes / Bills',
-    'Rent',
+    'Rent / Mortgage',
     'Unsure'
 ]
+
+tabs = {
+    'Singapore':
+        {'tag': 'SG',
+         'currency': 'SGD',
+         'emoji': '🇸🇬'},
+    'United States':
+        {'tag': 'US',
+         'currency': 'USD',
+         'emoji': '🇺🇸'}
+}
 
 converter = {
     'USD': 1,

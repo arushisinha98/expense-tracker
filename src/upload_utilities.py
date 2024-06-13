@@ -1,6 +1,5 @@
-import fitz
 import os
-from datetime import datetime
+import sys
 import pandas as pd
 
 from decouple import config
@@ -9,6 +8,9 @@ MY_NAME = config('MY_NAME')
 DBS, OCBC, IBKR, Endowus = config('DBS'), config('OCBC'), config('IBKR'), config('Endowus')
 FD, SRS = config('FD'), config('SRS')
 CPF, CDP = config('CPF'), config('CDP')
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
 from pdf_utilities import extract_text
 from read_dbs import DBSStatement, SRSStatement, FDStatement
@@ -36,7 +38,7 @@ def clear_directory(path = f"{MASTER_DIRECTORY}/data/uploads/"):
         print(e)
 
 
-def list_files(directory = MASTER_DIRECTORY):
+def list_files(directory = f"{MASTER_DIRECTORY}/data/"):
     '''
     FUNCTION to list all the files in a directory.
     input: directory, root as a string
@@ -47,11 +49,12 @@ def list_files(directory = MASTER_DIRECTORY):
         path = os.getcwd()
         filelist = []
         for root, dirs, files in os.walk(path):
-                for ff in files:
-                    filelist.append(os.path.join(root,ff))
+            for ff in files:
+                filelist.append(os.path.join(root,ff))
         return filelist
     except Exception as e:
         print(e)
+    
     
 def search_data(filename):
     '''
@@ -62,13 +65,13 @@ def search_data(filename):
     - df, dataframe of pre-processed data if found, empty dataframe if not found
     '''
     try:
-        # if search for filename with .csv extension
+        # search for filename with .csv extension
         if "." in filename:
             file = '/' + filename[:filename.rfind(".")] + '.csv'
         else:
             file = '/' + filename + '.csv'
-            
-        filelist = list_files(MASTER_DIRECTORY)
+        
+        filelist = list_files(f"{MASTER_DIRECTORY}/data/")
         idx = [ff for ff in filelist if file in ff]
         
         # if a single file found, return True and dataframe

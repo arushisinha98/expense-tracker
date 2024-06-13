@@ -1,25 +1,27 @@
 import os
 import sys
-from datetime import datetime, date
-
-curr_dir = os.path.dirname(__file__)
-sys.path.append(curr_dir)
+from datetime import datetime
+import pandas as pd
+import streamlit as st
 
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
 
-import numpy as np
-import pandas as pd
-import streamlit as st
-from annotated_text import annotated_text
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
-from constants import expense_categories, converter
+from constants import expense_categories, tabs, converter
 from dtype_conversions import float_to_str
-from format_utilities import format_table, update_data_editor
+from format_utilities import create_annotations, format_table, update_data_editor
 from upload_utilities import search_data, process_upload, completed, save_data, list_files
 
 
+
 def uploader(border = True):
+    '''
+    FUNCTION to create data uploader with backend logic to process, extract, and save data from uploaded statements.
+    '''
+    
     with st.container(border = border):
         # file uploader for statements
         uploaded_file = st.file_uploader("Upload a new statement", accept_multiple_files = False)
@@ -35,11 +37,11 @@ def uploader(border = True):
                     st.session_state["upload_data"] = df
                 if "preprocessed" not in st.session_state:
                     st.session_state["preprocessed"] = True
-            
+                    
             # if file not found, create processed dataframe and save in relevant data folder
             else:
                 bytes_data = uploaded_file.read()
-                with open(f"data/uploads/{uploaded_file.name}", 'wb') as f:
+                with open(f"{MASTER_DIRECTORY}/data/uploads/{uploaded_file.name}", 'wb') as f:
                     f.write(bytes_data)
                 statement = process_upload(f"{uploaded_file.name}", bytes_data)
                 if statement:
@@ -51,14 +53,12 @@ def uploader(border = True):
                 else:
                     st.write("⚠️ ERROR: Could not process file contents")
             
-            # show dataframe (either loaded or processed)
+            # show dataframe (either extracted or preprocessed)
             if "upload_data" in st.session_state:
                 df = st.session_state["upload_data"]
                 if "Amount" in df.columns:
-                    annotated_text((float_to_str(sum(df["Amount"][df["Amount"] < 0])), "Outgoing"), "\t",
-                                   (float_to_str(sum(df["Amount"][df["Amount"] >= 0])), "Incoming"))
+                    create_annotations(df, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
                 df = format_table(df)
-                
                 # not editable if already preprocessed
                 if st.session_state["preprocessed"]:
                     classified_df = st.data_editor(df, num_rows = 'fixed', disabled = True, use_container_width = True)
@@ -66,7 +66,7 @@ def uploader(border = True):
                     classified_df = st.data_editor(df, num_rows = 'fixed', disabled = ('Date','Amount','Balance'), use_container_width = True)
                     
                     # save in same directory as raw data file
-                    save = st.button("Submit", disabled = completed(classified_df)==False)
+                    save = st.button("Upload", disabled = completed(classified_df)==False, key = "AutoUpload")
                     if save:
                         save_data(classified_df, uploaded_file.name)
                         
@@ -80,84 +80,106 @@ def uploader(border = True):
                 st.session_state.pop("preprocessed")
             
             
+            
 def tabulator(border = True):
+    '''
+    FUNCTION to create manual data tabulator with backend logic to save data.
+    '''
+    # TODO: update_data_editor to save latest iteration of manual table
+    
     # initialize empty dataframe with columns: date, description, amount, category
     @st.cache_data
-    def initialize_data() -> pd.DataFrame:
-        df = pd.DataFrame(columns = ["Date","Description","Amount","Category"])
-        df["Date"] = df["Date"].astype("datetime64")
-        df["Amount"] = df["Amount"].astype("float64")
-        return df.set_index("Date")
+    def initialize_data(tabletype) -> pd.DataFrame:
+        assert tabletype in ['Expense','Balance']
         
-    if "ManualTable" not in st.session_state:
-        st.session_state["ManualTable"] = initialize_data()
+        try:
+            if tabletype == 'Expense':
+                df = pd.DataFrame(columns = ["Date","Description","Amount","Category"])
+                df["Date"] = df["Date"].astype("datetime64")
+                df["Amount"] = df["Amount"].astype("float64")
+            else:
+                df = pd.DataFrame(columns = ["Date","Balance"])
+                df["Date"] = df["Date"].astype("datetime64")
+                df["Balance"] = df["Balance"].astype("float64")
+            return df.set_index("Date")
+        except Exception as e:
+            print(e)
         
     if "SubmitError" not in st.session_state:
         st.session_state["SubmitError"] = False
+    if "ManualTable" not in st.session_state:
+        st.session_state["ManualTable"] = initialize_data('Expense')
     
     with st.container(border = border):
-        col1, col2 = st.columns([1,1])
+        col1, col2 = st.columns([1,2])
         
         # radio: choose location tag
         with col1:
-            country = st.radio("Choose a location tag", ["Singapore","United States"], index = None)
-            if country == "Singapore":
-                tag = "SG"
-            else:
-                tag = "US"
+            country = st.radio("Choose a location tag", list(tabs.keys()))
+            tag = tabs[country]['tag']
+                
+        # radio: choose table type
+        with col2:
+            tabletype = st.radio("Choose a table type", ['Expense','Balance'])
+            st.session_state["ManualTable"] = initialize_data(tabletype)
+                
+        # editable dataframe for manual entry
+        if tabletype == 'Expense':
+            edited = st.data_editor(st.session_state["ManualTable"],
+                        use_container_width = True, num_rows = 'dynamic',
+                        column_config = {"Date": st.column_config.DateColumn(),
+                                         "Category": st.column_config.SelectboxColumn(options = expense_categories)
+                                        }
+                        )
+            create_annotations(edited, column = "Amount", threshold = 0, labels = ["Outgoing", "Incoming"])
+        else:
+            edited = st.data_editor(st.session_state["ManualTable"],
+                        use_container_width = True, num_rows = 'dynamic',
+                        column_config = {"Date": st.column_config.DateColumn()}
+                        )
         
         # text input: create filename
-        with col2:
-            filename = st.text_input("Create filename", "")
-            if filename:
-                bool, df = search_data(filename)
-                if bool:
-                    st.write("⚠️ A file with this name already exists.")
-                    st.session_state["SubmitError"] = True
-                if filename.count("/") > 1:
-                    st.write("⚠️ Only one sub-directory may be created.")
-                    st.session_state["SubmitError"] = True
+        filename = st.text_input("Create filename", placeholder = "e.g. HSBC/FEB-2024")
+        if filename:
+            bool, df = search_data(filename)
+            if bool:
+                st.write("⚠️ A file with this name already exists.")
+                st.session_state["SubmitError"] = True
+            if filename.count("/") != 1:
+                st.write("⚠️ Only one sub-directory may be created.")
+                st.session_state["SubmitError"] = True
         
         # get filepath to save manual data
-        if country and filename and not bool:
+        if country and tabletype and filename and not bool:
             st.session_state["SubmitError"] = False
             if filename.count("/") == 1:
-                subdir = f"{MASTER_DIRECTORY}/data/{tag}/Manual/{filename[:filename.find('/')]}/"
+                subdir = f"{MASTER_DIRECTORY}/data/{tag}/{filename[:filename.find('/')]}/"
                 if not os.path.exists(subdir):
                     os.mkdir(subdir)
                 filepath = subdir + filename[filename.find('/')+1:] + '.csv'
             else:
-                filepath = os.getcwd() + f"/data/{tag}/Manual/{filename}.csv"
-        
-        # editable dataframe for manual entry
-        edited = st.data_editor(st.session_state["ManualTable"],
-                    use_container_width = True, num_rows = 'dynamic',
-                    column_config = {"Date": st.column_config.DateColumn(),
-                                     "Category": st.column_config.SelectboxColumn(options = expense_categories)}
-                                     )
-    
+                filepath = os.getcwd() + f"/data/{tag}/{filename}.csv"
+
         def disable_button(edited):
             # no rows added
             bool1 = edited.shape[0] == 0
             # incomplete/unfilled cells
             bool2 = any([pd.isnull(edited.loc[ix, col]) for ix in edited.index for col in edited.columns])
-            
             if filename and bool or bool1 or bool2:
                 return True
             else:
                 return False
-        
-        submit_button = st.button("Submit", disabled = disable_button(edited))
+    
+        submit_button = st.button("Submit", disabled = disable_button(edited), key = "ManualUpload")
         if submit_button and st.session_state["SubmitError"]==False:
-            edited["Amount"] = edited["Amount"]*-1
             edited.reset_index().to_csv(filepath, index = True)
-            annotated_text((float_to_str(sum(edited["Amount"][edited["Amount"] < 0])), "Outgoing"))
-            st.write(f"Data uploaded to `~/data/{tag}/Manual/{filename}.csv`")
+            st.write(f"Data uploaded to `~/data/{tag}/{filename}.csv`")
+
 
 
 def calculator(master_df = pd.DataFrame()):
     st.header("⚖️ Calculator")
-    st.caption("Manually fill out account values to compute total net worth in USD.")
+    st.caption("Manually add, remove or edit account values and compute total net worth in USD.")
 
     with st.container():
         st.caption("⏰ Estimated time: 10 minutes")
@@ -174,27 +196,31 @@ def calculator(master_df = pd.DataFrame()):
         
         edited = st.data_editor(st.session_state["CalculatorTable"],
                                 key = "edit_table",
-                                num_rows = 'dynamic') # run update_data_editor on_change?
+                                num_rows = 'dynamic',
+                                use_container_width = True,
+                                column_config = {
+                                    "Currency": st.column_config.SelectboxColumn(options = converter.keys())}
+                                ) # TODO: on_change = run update_data_editor and compute running total
         
-        submit_button = st.button("Compute Total")
+        submit_button = st.button("Export", key = "Export")
         
         if submit_button:
             master_df = update_data_editor(master_df,
-                                            compulsory_cols = ['Account', 'Raw Value', 'Currency'],
-                                            update_session_tag = 'edit_table')
+                                           compulsory_cols = ['Account', 'Raw Value', 'Currency'],
+                                           update_session_tag = 'edit_table')
             master_df["Balance in USD"] = master_df.apply(lambda x: f(x['Raw Value'], x['Currency']), axis = 1)
             st.session_state["CalculatorTable"] = master_df
             st.write(f"Total: ${float_to_str(sum(master_df['Balance in USD']))}")
+            date_tag = datetime.today().strftime('%Y-%m-%d')
+            master_df.to_csv(f"{MASTER_DIRECTORY}/data/Calculator/{date_tag}_export.csv")
             
-            with st.expander("View Details"):
-                st.write(master_df)
 
 
 def show_cards(country, redact):
-    assert country in ["SG", "US"]
+    assert country in list(tabs.keys())
     
     try:
-        if country == "SG":
+        if country == "Singapore":
             cc1, cc2, cc3 = st.tabs(["HSBC Revolution","OCBC 90°N","Standard Chartered Smart"])
             with cc1:
                 ccards, ctext = st.columns([1, 3])
@@ -225,7 +251,7 @@ def show_cards(country, redact):
                         st.caption("19.2 points per S\$1 on BUS/MRT, 1.6 points per S\$1 otherwise")
                         st.caption("320 points = S\$1 | 1.015:1 KrisFlyer Miles Conversion, S\$26.75 Conversion Fee")
                     
-        else:
+        elif country == "United States":
             cc1, cc2 = st.tabs(["Chase United Gateway","Bank of America Travel Rewards"])
             with cc1:
                 ccards, ctext = st.columns([1, 3])
@@ -244,6 +270,9 @@ def show_cards(country, redact):
                     with ctext:
                         st.caption("No Annual Fee | No Foreign Currency Transaction Fee")
                         st.caption("1.5 points per \$1 on all purchases")
-                         
+                        
+        else:
+            st.caption("_Could not display credit cards._")
+            
     except Exception as e:
         print(e)

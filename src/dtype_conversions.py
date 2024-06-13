@@ -1,5 +1,3 @@
-import fitz
-import os
 import re
 from datetime import datetime
 

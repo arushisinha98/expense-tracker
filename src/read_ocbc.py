@@ -1,9 +1,12 @@
-import fitz
 import os
+import sys
 from datetime import datetime
 import pandas as pd
 import numpy as np
 import sys
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
 
 from pdf_utilities import extract_text, select_text, invert_select_text
 from dtype_conversions import str_to_float

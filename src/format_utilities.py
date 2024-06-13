@@ -1,15 +1,40 @@
-import altair as alt
+import os
+import sys
 import pandas as pd
-import numpy as np
+import altair as alt
 import streamlit as st
+from annotated_text import annotated_text
+
 from decouple import config
 MASTER_DIRECTORY = config('MASTER_DIRECTORY')
+
+curr_dir = os.path.dirname(__file__)
+sys.path.append(curr_dir)
+
+from dtype_conversions import float_to_str
+
 
 pd.set_option('display.precision', 2)
 colors = ['#EEB64B','#FC9460','#E54264','#442261','#005B6E','#64A47F','#C3C48A']
 # bcolors = ['#03DAC6', '#CF6679']
 
 
+def create_annotations(df, column, threshold, labels):
+    '''
+    FUNCTION to sum values in a dataframe column below and exceeding a threshold and creating two annotations to express these amounts
+    '''
+    assert column in df.columns
+    assert len(labels) == 2
+    try:
+        return annotated_text(
+            (float_to_str(sum(df[column][df[column] < threshold])),labels[0]),
+            "\t",
+            (float_to_str(sum(df[column][df[column] >= threshold])), labels[1])
+            )
+    except Exception as e:
+        print(e)
+        
+        
 def format_table(df, column = "Amount"):
     '''
     FUNCTION to format a table by highlighting a cell in a column based on if it exceeds a value.
@@ -28,7 +53,7 @@ def format_table(df, column = "Amount"):
         print(e)
 
 
-def highlight(val, threshold = 0, bcolors = ['#64A47F','#C3C48A']):
+def highlight(val, threshold = 0, bcolors = ['#03DAC6', '#CF6679']):
     '''
     FUNCTION to choose which background color a cell with be highlighted with based on cell value
     '''
@@ -103,7 +128,7 @@ def local_css(filename):
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html = True)
 
 
-def vertical_bar(chart_data, redact, size = 20):
+def vertical_bar(chart_data, redact):
     '''
     FUNCTION to create a vertical stacked bar chart.
     input: chart_data, the input dataframe
@@ -111,6 +136,7 @@ def vertical_bar(chart_data, redact, size = 20):
     '''
     try:
         melt_df = pd.melt(chart_data.reset_index(), id_vars = ['Date'], value_vars = chart_data.columns)
+        size = melt_df.shape[0]/5.5
         
         if redact:
             chart = (

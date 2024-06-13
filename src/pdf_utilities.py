@@ -1,6 +1,4 @@
 import fitz
-import os
-from datetime import datetime
 
 
 def extract_text(filepath):

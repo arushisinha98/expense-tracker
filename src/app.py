@@ -12,11 +12,11 @@ curr_dir = os.path.dirname(__file__)
 sys.path.append(curr_dir)
 
 from constants import expense_categories, tabs
+#from frontend import uploader, tabulator, calculator, show_cards
 from format_utilities import horizontal_bar, vertical_bar
 from upload_utilities import clear_directory, completed
 from dtype_conversions import float_to_str, redact_text
-from compile_utilities import compile_statements, category_table, balance_table
-from frontend import uploader, tabulator, calculator, show_cards
+#from compile_utilities import compile_statements, category_table, balance_table
 
 
 def MAIN():
@@ -133,7 +133,6 @@ def MAIN():
         with tab_content[-1]:
             calculator(master_df)
     
-
 
 
 def README():

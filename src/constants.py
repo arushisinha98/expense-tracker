@@ -22,10 +22,15 @@ tabs = {
     'United States':
         {'tag': 'US',
          'currency': 'USD',
-         'emoji': '🇺🇸'}
+         'emoji': '🇺🇸'},
+    'United Kingdom':
+        {'tag': 'UK',
+         'currency': 'GBP',
+         'emoji': '🇬🇧'}
 }
 
 converter = {
     'USD': 1,
-    'SGD': 0.74
+    'SGD': 0.74,
+    'GBP': 1.32,
 }

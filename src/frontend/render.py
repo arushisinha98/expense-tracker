@@ -6,12 +6,6 @@ import streamlit as st
 
 from constants import expense_categories, tabs
 
-rootDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-frontendDir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
-
-sys.path.append(frontendDir)
-from upload import uploader, tabulator
-
 
 def README():
     '''
@@ -77,10 +71,10 @@ def README():
 
 
 
-def MAIN():
+def MAIN(root_dir):
     # create tabs
     tab_names = ["Upload"] + list(tabs.keys())
-    if os.path.exists(f"{rootDir}/data/Calculator/"):
+    if os.path.exists(f"{root_dir}/data/Calculator/"):
         tab_names +=  ["Calculator"]
     tab_content = st.tabs(tab_names)
     
@@ -97,7 +91,5 @@ def MAIN():
             """)
         
         st.caption("Add monthly bank, credit card, or investment statements to the database.")
-        uploader()
         
         st.caption("OR Manually tabulate data.")
-        tabulator()

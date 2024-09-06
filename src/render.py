@@ -101,3 +101,4 @@ def MAIN():
         
         st.caption("OR Manually tabulate data.")
         tabulator()
+        

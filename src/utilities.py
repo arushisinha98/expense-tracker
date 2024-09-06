@@ -22,7 +22,7 @@ def clear_directory(path = f"{rootDir}/data/uploads/"):
 
 
 
-def list_files(directory = f"{rootDir}/data/"):
+def list_files(directory = f"{rootDir}/data/", ignore = ['.DS_Store']):
     '''
     FUNCTION to list all the files in a directory.
     input: directory, root as a string
@@ -35,6 +35,7 @@ def list_files(directory = f"{rootDir}/data/"):
         for root, dirs, files in os.walk(path):
             for ff in files:
                 filelist.append(os.path.join(root,ff))
+        filelist = [file for file in filelist if not any(skip in file for skip in ignore)]
         return filelist
     except Exception as e:
         print(e)
@@ -54,9 +55,9 @@ def search_data(filename):
     try:
         # search for filename with .csv extension
         if "." in filename:
-            file = '/' + filename[:filename.rfind(".")] + '.csv'
+            file = filename[:filename.rfind(".")] + '.csv'
         else:
-            file = '/' + filename + '.csv'
+            file = filename + '.csv'
         
         filelist = list_files(f"{rootDir}/data/")
         idx = [ff for ff in filelist if file in ff]
@@ -70,19 +71,22 @@ def search_data(filename):
         # otherwise, return False and empty dataframe
         else:
             return False, pd.DataFrame()
+        
     except Exception as e:
         print(e)
 
 
         
-def check_statement(text, match_strings):
+def find_text_markers(text, match_strings):
     return all([text.find(str) >= 0 for str in match_strings])
 
 
 
 def completed(df):
     '''
-    FUNCTION to check if, minimally, all expenses have been classified. Note expenses are -ve amounts (i.e. outgoing); classification of incoming amounts (+ve) is optional.
+    FUNCTION to check if, minimally, all expenses have been classified.
+    Note expenses are outgoing amounts (i.e. -ve);
+    classification of incoming amounts (i.e. +ve) is optional.
     input: df, the dataframe
     output: bool
     '''

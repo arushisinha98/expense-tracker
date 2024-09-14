@@ -2,7 +2,7 @@ import os
 import sys
 import pandas as pd
 
-rootDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+rootDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 
 
 def clear_directory(path = f"{rootDir}/data/uploads/"):
@@ -82,41 +82,41 @@ def find_text_markers(text, match_strings):
 
 
 
-def completed(df):
-    '''
-    FUNCTION to check if, minimally, all expenses have been classified.
-    Note expenses are outgoing amounts (i.e. -ve);
-    classification of incoming amounts (i.e. +ve) is optional.
-    input: df, the dataframe
-    output: bool
-    '''
-    try:
-        if "Category" not in df.columns:
-            return True
-        else:
-            idx1 = df[df["Category"].isin(expense_categories)].index
-            idx2 = df[df["Amount"] < 0].index
-            return set(idx1) >= set(idx2)
-    except Exception as e:
-        print(e)
+def get_tree_structure(path = f"{rootDir}/data"):
+    def get_subdirectory_structure(subpath):
+        subdirs = [d for d in os.listdir(subpath) if os.path.isdir(os.path.join(subpath, d))]
+        nodes = []
+        for subdir in subdirs:
+            subdir_path = os.path.join(subpath, subdir)
+            node = {
+                'value': subdir_path,
+                'label': subdir,
+                'children': get_subdirectory_structure(subdir_path)
+            }
+            nodes.append(node)
+        return nodes
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"The path {path} does not exist.")
+
+    return get_subdirectory_structure(path)
 
 
 
-def save_data(df, filename):
-    '''
-    FUNCTION to save processed data as .csv file in database.
-    input:
-    - df, the dataframe
-    - filename, the name of the original file
-    output: N/A
-    '''
-    try:
-        clear_directory()
-        # find filepath of original file and save csv
-        filelist = list_files(rootDir)
-        idx = [ff for ff in filelist if filename in ff]
-        if idx:
-            file = idx[0][:idx[0].rfind(".")] + '.csv'
-            df.to_csv(file)
-    except Exception as e:
-        print(e)
+def create_nested_file(dir_string, root_directory = f"{rootDir}/data"):
+    def parse_directory_structure(dir_string):
+        return dir_string.split('/')
+
+    def create_filepath(root, dir_parts):
+        current_path = os.path.abspath(root)
+        for part in dir_parts[:-1]:
+            # Exclude the last part, which is the filename
+            current_path = os.path.join(current_path, part)
+            if not os.path.exists(current_path):
+                os.makedirs(current_path)
+        filepath = os.path.join(current_path, dir_parts[-1])
+        return filepath
+
+    parts = parse_directory_structure(dir_string)
+    filepath = create_filepath(root_directory, parts)
+    return filepath

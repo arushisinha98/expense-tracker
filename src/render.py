@@ -3,14 +3,23 @@ import sys
 from datetime import date
 import pandas as pd
 import streamlit as st
+from streamlit_tree_select import tree_select
 
 from constants import expense_categories, tabs
 
 rootDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 frontendDir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
+backendDir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))
 
 sys.path.append(frontendDir)
 from upload import uploader, tabulator
+
+sys.path.append(backendDir)
+from dir_utilities import get_tree_structure
+
+# get data directory
+dataDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
+directory_tree = get_tree_structure()
 
 
 def README():
@@ -96,9 +105,20 @@ def MAIN():
             *{expense_categories}*
             """)
         
-        st.caption("Add monthly bank, credit card, or investment statements to the database.")
-        uploader()
-        
-        st.caption("OR Manually tabulate data.")
-        tabulator()
+        col1, col2 = st.columns([1,1])           
+        # radio: choose statement type
+        with col1:
+            tabletype = st.radio("Choose a statement type and a directory to save the data.",
+                                     ['Expense','Balance']
+                                     )
+        # radio: choose directory
+        with col2:
+            select = tree_select(directory_tree)
+
+        if select["checked"]:
+            st.caption("Add monthly bank, credit card, or investment statements to the database.")
+            uploader(select["checked"], tabletype)
+            
+            st.caption("OR Manually tabulate data.")
+            tabulator(select["checked"], tabletype)
         

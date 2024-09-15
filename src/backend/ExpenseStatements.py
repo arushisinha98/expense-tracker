@@ -11,6 +11,7 @@ class ExpenseStatement(ABC):
     def __init__(self, filepath, fulltext):
         self.type = "expense"
         self.upload_date = datetime.now()
+        self.last_update = self.upload_date
         self.file_path = filepath
         self.fulltext = fulltext
         self.transactions = []
@@ -26,13 +27,21 @@ class ExpenseStatement(ABC):
     def get_transactions(self):
         return self.transactions
 
-    def add_classification(self, index, category):
-        if 0 <= index < len(self.transactions):
-            self.transactions[index]['Category'] = category
+    def update_transactions(self, df):
+        self.transactions = df.to_dict('records')
+        self.last_update = datetime.now()
 
-    def add_comment(self, index, comment):
-        if 0 <= index < len(self.transactions):
-            self.transactions[index]['Comments'] = comment
+    def get_last_update(self):
+        return self.last_update
+
+    def save_transactions(self):
+        filepath = self.file_path
+        if "." not in filepath:
+            filepath += '.csv'
+        elif not filepath.endswith('.csv'):
+            filepath = filepath[:filepath.rfind(".")] + '.csv'
+        df = pd.DataFrame(self.transactions)
+        df.to_csv(filepath, index = True)
 
 
 class PDFExpenseStatement(ExpenseStatement):

@@ -4,21 +4,15 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from typing import Union
-import json
-
-# import from the root directory
-rootDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(rootDir)
+import re
 
 from constants import expense_categories, tabs
 
-# import from backend directory
-backendDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend'))
-sys.path.append(backendDir)
+sys.path.append('..')
+from utilities import DataDirectory, get_absolute_path
 
-
-from dir_utilities import *
-from read_utilities import *
+sys.path.append(get_absolute_path('backend'))
+from read_utilities import read_pdf, read_image
 from ExpenseStatements import SCStatement, HSBCStatement
 
 
@@ -40,18 +34,23 @@ def uploader(upload_folder, tabletype, border = True):
             st.session_state["uploaded_file"] = None
         if "uploaded_dataframe" not in st.session_state:
             st.session_state["uploaded_dataframe"] = None
+        if "upload_processed" not in st.session_state:
+            st.session_state["upload_processed"] = False
         
         # check if a new file has been uploaded
         if uploaded_file and uploaded_file != st.session_state["uploaded_file"]:
             st.session_state["uploaded_file"] = uploaded_file
-            filepath = f"{upload_folder[0]}/{uploaded_file.name}"
-            with open(filepath, "wb") as f:
-                f.write(uploaded_file.getbuffer())
+            filepath = f"{upload_folder}/{uploaded_file.name}"
+            
+            DataDirectory.insert_file(
+                content = uploaded_file.getbuffer(),
+                destination = filepath
+                )
 
             # create statement object
-            statement = create_statement(filepath)
+            st.session_state["statement_object"] = create_statement(filepath)
             st.session_state["uploaded_dataframe"] = pd.DataFrame(
-                statement.get_transactions()
+                st.session_state["statement_object"].get_transactions()
                 )
 
         # display data editor
@@ -61,16 +60,15 @@ def uploader(upload_folder, tabletype, border = True):
                 num_rows='fixed'
                 )
             st.session_state["editabled_df"] = editable_df
-            st.write(editable_df)
-            submit_button = st.button("Save",
-                                  disabled = disable_save(editable_df),
-                                  key = "upload_save")
+            
+            submit_button = st.button(
+                "Save",
+                disabled = disable_save(editable_df),
+                key = "upload_save")
             
             if submit_button:
-                editable_df.to_csv(
-                    filepath[:filepath.find(".")]+'.csv',
-                    index = True
-                    )
+                st.session_state["statement_object"].update_transactions(editable_df)
+                st.session_state["statement_object"].save_transactions()
                 
             
 
@@ -187,12 +185,17 @@ def show_editable_df(df, num_rows):
     return editable_df
         
 
-def disable_save(editable_df, optional_cols = ["Comments"]):
+def disable_save(editable_df,
+                 optional_cols = ["Comments"]):
     if editable_df.empty:
         return True
+    if "Category" in editable_df.columns:
+        if any(cat not in expense_categories for cat in editable_df["Category"]):
+            return True
+    if "Amount" in editable_df.columns:
+        if any(amt == 0 for amt in editable_df["Amount"]):
+            st.write("Ensure all expenses were read correctly from statement.")
     mandatory_cols = list(set(editable_df.columns) - set(optional_cols))
-    column_emptiness = editable_df[mandatory_cols].isnull().all()
-    if column_emptiness.any():
+    if editable_df[mandatory_cols].isnull().all().any():
         return True
-    has_null = editable_df[mandatory_cols].isnull().any().any()
-    return has_null
+    return editable_df[mandatory_cols].isnull().any().any()

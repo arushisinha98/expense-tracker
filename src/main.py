@@ -6,7 +6,12 @@ from render import README, MAIN
 
 
 def main():
-    MAIN()
+    try:
+        MAIN()
+    except Exception as e:
+        print(e)
+        README()
 
+        
 if __name__ == '__main__':
     main()

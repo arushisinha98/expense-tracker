@@ -3,23 +3,58 @@ import sys
 from datetime import date
 import pandas as pd
 import streamlit as st
-from streamlit_tree_select import tree_select
 
 from constants import expense_categories, tabs
+from utilities import DataDirectory, get_absolute_path
 
-rootDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-frontendDir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
-backendDir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))
+rootDir = get_absolute_path('..')
+frontendDir = get_absolute_path('frontend')
+backendDir = get_absolute_path('backend')
 
 sys.path.append(frontendDir)
 from upload import uploader, tabulator
 
-sys.path.append(backendDir)
-from dir_utilities import get_tree_structure
 
-# get data directory
-dataDir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
-directory_tree = get_tree_structure()
+def MAIN():
+    # create tabs
+    tab_names = ["Upload"] + list(tabs.keys())
+    tab_content = st.tabs(tab_names)
+
+    with tab_content[0]:
+        st.header("📤 Upload Data")
+        
+        # display Expense Categories in expander
+        with st.expander("Expense Categories"):
+            st.write(f"""Categories are listed in `constants.py`.
+            *{expense_categories}*
+            """)
+        
+        col1, col2 = st.columns([1,1])           
+        # radio: choose statement type
+        with col1:
+            tabletype = st.radio(
+                label = "Choose a statement type and a directory to save the data.",
+                options = ['Expense','Balance'],
+                index = None
+                )
+        
+        # radio: choose directory
+        with col2:
+            select = st.selectbox(
+                label = "Select a directory to save the data.",
+                placeholder = "Choose a directory",
+                options = DataDirectory.print_tree_structure(),
+                index = None,
+                label_visibility = 'hidden')
+
+        if select:
+            upload_folder = DataDirectory.get_full_path(select)
+            st.caption("Add monthly bank, credit card, or investment statements to the database.")
+            uploader(upload_folder, tabletype)
+            
+            st.caption("OR Manually tabulate data.")
+            tabulator(upload_folder, tabletype)
+
 
 
 def README():
@@ -59,8 +94,8 @@ def README():
 
             with st.container(border = True):
                 st.write("All the data for your app will be in `../data/`. Within this folder, make sure that there exists a subdirectory for uploads as well as one for _each_ tag that was initialized in `tabs`. Here is an example of what it should look like:")
-                st.write(['../data/uploads/','../data/US/'])
-                st.write("BONUS: If you add a subdirectory `../data/Calculator`, you'll unlock a new tab that tabulates your balance across accounts and gives you the total sum in your base currency.")
+                st.write(['../data/US/','../data/SG/'])
+                st.write("Feel free to add subdirectories.")
 
             # some notes
             st.write("*Note that you will need to configure the logic for automatically saving data from your bank, credit card, and/or investment statements. However, once you have completed the above steps, the manual data entry should work just fine!*")
@@ -83,42 +118,4 @@ def README():
 
     except Exception as e:
         print(e)
-
-
-
-def MAIN():
-    # create tabs
-    tab_names = ["Upload"] + list(tabs.keys())
-    if os.path.exists(f"{rootDir}/data/Calculator/"):
-        tab_names +=  ["Calculator"]
-    tab_content = st.tabs(tab_names)
-    
-    # initialize master_df (to be used in calculator page)
-    master_df = pd.DataFrame()
-
-    with tab_content[0]:
-        st.header("📤 Upload Data")
-        
-        # display Expense Categories in expander
-        with st.expander("Expense Categories"):
-            st.write(f"""Categories are listed in `constants.py`.
-            *{expense_categories}*
-            """)
-        
-        col1, col2 = st.columns([1,1])           
-        # radio: choose statement type
-        with col1:
-            tabletype = st.radio("Choose a statement type and a directory to save the data.",
-                                     ['Expense','Balance']
-                                     )
-        # radio: choose directory
-        with col2:
-            select = tree_select(directory_tree)
-
-        if select["checked"]:
-            st.caption("Add monthly bank, credit card, or investment statements to the database.")
-            uploader(select["checked"], tabletype)
-            
-            st.caption("OR Manually tabulate data.")
-            tabulator(select["checked"], tabletype)
         

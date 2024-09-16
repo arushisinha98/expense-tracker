@@ -62,11 +62,8 @@ class DataManager:
 
     def search_directory(self, filename):
         matching_files = [f for f in self.file_list if filename in f]
-        
         if len(matching_files) < 1:
             return False
-        elif len(matching_files) > 1:
-            raise FileExistsError("Muliple matching files found.")
         return True
 
     def insert_file(self, content, destination):

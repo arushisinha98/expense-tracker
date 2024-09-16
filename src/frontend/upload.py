@@ -7,9 +7,8 @@ from typing import Union
 import re
 
 from constants import expense_categories, tabs
-
-sys.path.append('..')
 from utilities import DataDirectory, get_absolute_path
+from format_utilities import create_annotations
 
 sys.path.append(get_absolute_path('backend'))
 from read_utilities import read_pdf, read_image
@@ -34,35 +33,61 @@ def uploader(upload_folder, tabletype, border = True):
             st.session_state["uploaded_file"] = None
         if "uploaded_dataframe" not in st.session_state:
             st.session_state["uploaded_dataframe"] = None
-        if "upload_processed" not in st.session_state:
-            st.session_state["upload_processed"] = False
+        if "statement_object" not in st.session_state:
+            st.session_state["statement_object"] = None
         
         # check if a new file has been uploaded
         if uploaded_file and uploaded_file != st.session_state["uploaded_file"]:
-            st.session_state["uploaded_file"] = uploaded_file
-            filepath = f"{upload_folder}/{uploaded_file.name}"
-            
-            DataDirectory.insert_file(
-                content = uploaded_file.getbuffer(),
-                destination = filepath
-                )
+            filename = uploaded_file.name
+            filetype = uploaded_file.name[uploaded_file.name.rfind("."):]
 
-            # create statement object
-            st.session_state["statement_object"] = create_statement(filepath)
-            st.session_state["uploaded_dataframe"] = pd.DataFrame(
-                st.session_state["statement_object"].get_transactions()
-                )
+            # if processed .csv has been saved, retrieve and show
+            processed_file = filename[:filename.rfind(".")]+".csv"
+            if DataDirectory.search_directory(processed_file):
+                st.write("A file with this name has already been processed.")
+                st.session_state["statement_object"] = create_statement(
+                    f"{upload_folder}/{uploaded_file.name}"
+                    )
+                retrieved_df = pd.read_csv(
+                    f"{upload_folder}/{processed_file}",
+                    index_col = 0
+                    )
+                st.session_state["statement_object"].update_transactions(retrieved_df)
+                st.session_state["uploaded_dataframe"] = retrieved_df
+
+            else:
+                st.session_state["uploaded_file"] = uploaded_file
+                filepath = f"{upload_folder}/{filename}"
+
+                # insert file into directory
+                DataDirectory.insert_file(
+                    content = uploaded_file.read(),
+                    destination = filepath
+                    )
+
+                # create statement object and read transactions
+                st.session_state["statement_object"] = create_statement(filepath)
+                st.session_state["uploaded_dataframe"] = pd.DataFrame(
+                    st.session_state["statement_object"].get_transactions()
+                    )
 
         # display data editor
         if st.session_state["uploaded_dataframe"] is not None:
+            if tabletype == 'Expense':
+                create_annotations(
+                    st.session_state["uploaded_dataframe"],
+                    column = "Amount",
+                    threshold = 0,
+                    labels = ["Payments", "Expenses"]
+                    )
+                
             editable_df = show_editable_df(
                 st.session_state["uploaded_dataframe"],
-                num_rows='fixed'
+                num_rows='dynamic'
                 )
-            st.session_state["editabled_df"] = editable_df
+            st.session_state["editable_dataframe"] = editable_df
             
-            submit_button = st.button(
-                "Save",
+            submit_button = st.button("Save",
                 disabled = disable_save(editable_df),
                 key = "upload_save")
             
@@ -71,48 +96,46 @@ def uploader(upload_folder, tabletype, border = True):
                 st.session_state["statement_object"].save_transactions()
                 
             
-
 def tabulator(upload_folder, tabletype, border = True):
     '''
     FUNCTION to create manual data tabulator with backend logic to save data.
     '''
     with st.container(border = border):
+
+        # initialize session state variables
+        if "SubmitError" not in st.session_state:
+            st.session_state["SubmitError"] = None
         st.session_state["tabulated_dataframe"] = initialize_data(tabletype)
+
+        # display data editor
         editable_df = show_editable_df(
             st.session_state["tabulated_dataframe"],
             num_rows='dynamic'
             )
 
-        # text input: create filename
-        filename = st.text_input("Create filename",
-                                 placeholder = "e.g. HSBC/FEB-2024")
-                
-        if filename:
-            main_bool, df = search_data(filename)
-            if main_bool:
+        # create unique filename
+        filename = st.text_input(
+            "Create filename for tabulated data.",
+            placeholder = f"e.g. {datetime.now().month}-{datetime.now().year}"
+            )
+        if filename and len(filename) > 0:
+            while DataDirectory.search_directory(filename):
                 st.write("⚠️ A file with this name already exists.")
-                st.session_state["SubmitError"], main_bool = True, True
-            if filename.count("/") < 1:
-                st.write("⚠️ One sub-directory must be created.")
-                st.session_state["SubmitError"], main_bool = True, True
-            elif filename.count("/") > 1:
-                st.write("⚠️ Only sub-directory may be created.")
-                st.session_state["SubmitError"], main_bool = True, True
-
-        # get filepath to save manual data
-        if tabletype and filename and not main_bool:
+                st.session_state["SubmitError"] = True
             st.session_state["SubmitError"] = False
-            subdir = f"{upload_folder}/{filename[:filename.find('/')]}/"
-            if not os.path.exists(subdir):
-                os.mkdir(subdir)
-            filepath = subdir + filename[filename.find('/')+1:] + '.csv'
+
+        # save data in chosen directory
+        if st.session_state["SubmitError"] == False:
+            filename = filename[:filename.rfind('.')]+'.csv'
+            filepath = f"{upload_folder}/{filename}"
 
         submit_button = st.button("Save",
-                                  disabled = disable_save(editable_df),
-                                  key = "manual_save")
-        if submit_button and st.session_state["SubmitError"]==False:
-            editable_df.reset_index().to_csv(filepath, index = True)
-            st.write(f"Data uploaded to `~/data/{tag}/{filename}.csv`")
+            disabled = disable_save(editable_df),
+            key = "manual_save")
+        
+        if submit_button:
+            editable_df.reset_index().to_csv(filepath, index = False)
+            st.write(f"Data uploaded to `~/data/{upload_folder}/{filename}.csv`")
 
 
 def create_statement(filepath: str) -> Union[

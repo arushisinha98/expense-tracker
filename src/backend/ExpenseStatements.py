@@ -41,7 +41,7 @@ class ExpenseStatement(ABC):
         elif not filepath.endswith('.csv'):
             filepath = filepath[:filepath.rfind(".")] + '.csv'
         df = pd.DataFrame(self.transactions)
-        df.to_csv(filepath, index = True)
+        df.to_csv(filepath, index = False)
 
 
 class PDFExpenseStatement(ExpenseStatement):
@@ -74,8 +74,8 @@ class SCStatement(PDFExpenseStatement):
         self.identifiers = ["ARUSHI SINHA", "-2340"]
         self.statement_date = self.get_statement_date()
         self.regex_patterns = (
-            r'(\d{2}\s[A-Z][a-z]{2})\s+'  # First date
-            r'(\d{2}\s[A-Z][a-z]{2})\s+'  # Second date
+            r'(\d{2}\s[A-Z][a-z]{2})\s+'  # Transaction date
+            r'(\d{2}\s[A-Z][a-z]{2})\s+'  # Post date
             r'(.*?)\s+'                   # Description
             r'(Transaction Ref \d+)\s+'   # Transaction Ref
             r'(\d+\.\d{2}(?:\s*CR)?)'     # Amount
@@ -132,8 +132,8 @@ class HSBCStatement(PDFExpenseStatement):
         self.identifiers = ["ARUSHI SINHA", "-2726"]
         self.statement_date = self.get_statement_date()
         self.regex_patterns = (
-            r'(\d{1,2}\s?[A-Za-z]{3})\s*'  # First date
-            r'(\d{1,2}\s?[A-Za-z]{3})\s*'  # Second date
+            r'(\d{1,2}\s?[A-Za-z]{3})\s*'  # Post date
+            r'(\d{1,2}\s?[A-Za-z]{3})\s*'  # Transaction date
             r'(.+?)'                       # Description
             r'(?:\s+(\d+\.\d{2}(?:\s*CR)?))?$' # Amount (optional)
             )
@@ -144,10 +144,10 @@ class HSBCStatement(PDFExpenseStatement):
         if match:
             try:
                 try:
-                    transaction_date = datetime.strptime(match.group(1), '%d%b')
+                    transaction_date = datetime.strptime(match.group(2), '%d%b')
                 except ValueError:
                     try:
-                        transaction_date = datetime.strptime(match.group(1), '%d %b')
+                        transaction_date = datetime.strptime(match.group(2), '%d %b')
                     except ValueError:
                         transaction_date = None
                 description = match.group(3)

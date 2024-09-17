@@ -11,8 +11,8 @@ from utilities import DataDirectory, get_absolute_path
 from format_utilities import create_annotations
 
 sys.path.append(get_absolute_path('backend'))
-from read_utilities import read_pdf, read_image
-from ExpenseStatements import SCStatement, HSBCStatement
+from read_utilities import parse_pdf, parse_image, parse_llama
+from ExpenseStatements import SCExpense, HSBCExpense
 
 
 def uploader(upload_folder, tabletype, border = True):
@@ -139,21 +139,25 @@ def tabulator(upload_folder, tabletype, border = True):
 
 
 def create_statement(filepath: str) -> Union[
-        SCStatement,
-        HSBCStatement,
+        SCExpense,
+        HSBCExpense,
         None]:
-    content = read_image(filepath)
+    content = parse_image(filepath)
     checks = {
-        "Standard Chartered": r"Standard Chartered Bank",
-        "HSBC": r"HSBC",
+        "Standard Chartered": ["Standard Chartered Bank",
+                               "ARUSHI SINHA",
+                               "-2340"],
+        "HSBC": ["HSBC",
+                 "ARUSHI SINHA",
+                 "-2726"],
     }
     
-    for bank, pattern in checks.items():
-        if re.search(pattern, content, re.IGNORECASE):
-            if bank == "Standard Chartered":
-                return SCStatement(filepath, content)
-            elif bank == "HSBC":
-                return HSBCStatement(filepath, content)
+    for account, identifiers in checks.items():
+        if all(identifier in content for identifier in identifiers):
+            if account == "Standard Chartered":
+                return SCExpense(filepath, "llama-parse")
+            elif account == "HSBC":
+                return HSBCExpense(filepath, "llama-parse")
     return None
 
 

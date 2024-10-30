@@ -6,6 +6,8 @@ from render import README, MAIN
 
 
 def main():
+    if not os.path.isdir('data'):
+        raise NoDataDirectoryError
     try:
         MAIN()
     except Exception as e:

@@ -75,11 +75,11 @@ def uploader(upload_folder, tabletype, border = True):
         if st.session_state["uploaded_dataframe"] is not None:
             if tabletype == 'Expense':
                 create_annotations(
-                    st.session_state["uploaded_dataframe"],
-                    column = "Amount",
-                    threshold = 0,
-                    labels = ["Payments", "Expenses"]
-                    )
+                     st.session_state["uploaded_dataframe"],
+                     column = "Amount",
+                     threshold = 0,
+                     labels = ["Payments", "Expenses"]
+                     )
                 
             editable_df = show_editable_df(
                 st.session_state["uploaded_dataframe"],

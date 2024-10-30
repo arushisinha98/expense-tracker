@@ -6,7 +6,7 @@ from datetime import datetime
 import re
 import PyPDF2
 import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/bin/tesseract'
+#pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/bin/tesseract'
 from pdf2image import convert_from_path
 from dateutil.parser import parse
 from decimal import Decimal

@@ -1,3 +1,9 @@
+How to run:
+
+`$ python -m pip install -r requirements.txt`
+`$ streamlit run src/main.py`
+
+
 Here are some static screenshots of what the financial app looks like when it is up and running
 
 ![Alt text](screenshots/upload.png "Data Uplaoder")

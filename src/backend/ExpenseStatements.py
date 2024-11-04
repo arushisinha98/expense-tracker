@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dateutil.parser import parse
 from decimal import Decimal
 
-from src.backend.read_utilities import parse_pdf, parse_image, parse_llama
+from read_utilities import parse_pdf, parse_image, parse_llama
 
 
 class ExpenseStatement(ABC):

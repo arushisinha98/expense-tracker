@@ -70,7 +70,7 @@ class ParsePDF(ExpenseStatement):
                 if transaction:
                     self.transactions.append(transaction)
         except Exception as e:
-            print(f"Error parsing PDF: {str(e)}")
+            print(f"Error parsing PDF: {e}")
         
     @abstractmethod
     def parse_line(self, line, parse_method):
@@ -88,8 +88,8 @@ class SCExpense(ParsePDF):
                 r'(\d+\.\d{2}(?:\s*CR)?)'         # Amount
                 ),
             "llama-parse": (
-                r'\|\s*(\d{2}\s[A-Za-z]{3})\s*'
-                r'\|\s*(\d{2}\s[A-Za-z]{3})\s*'
+                r'\|\s*(\d{1,2}\s[A-Za-z]{3})\s*'
+                r'\|\s*(\d{1,2}\s[A-Za-z]{3})?\s*'
                 r'\|\s*(.*?)\s*'
                 r'\|\s*(\d+\.\d{2}(?:\s*CR)?)\s*\|'
                 )
@@ -99,7 +99,7 @@ class SCExpense(ParsePDF):
         self.parse_statement()
         
     def parse_line(self, line):
-        match = re.match(
+        match = re.search(
             self.regex_patterns[self.parse_method], line)
         if match:
             try:
@@ -123,8 +123,9 @@ class SCExpense(ParsePDF):
                     'Category': '',
                     'Comments': ''
                 }
-            except (ValueError, IndexError):
-                return (f"Error reading line '{line}': {str(e)}")
+            except (ValueError, IndexError) as e:
+                print(f"Error reading line '{line}': {str(e)}")
+                return None
         return None
 
     def get_statement_date(self):
@@ -190,8 +191,9 @@ class HSBCExpense(ParsePDF):
                     'Category': '',
                     'Comments': ''
                 }
-            except (ValueError, IndexError):
-                return (f"Error reading line '{line}': {str(e)}")
+            except (ValueError, IndexError) as e:
+                print(f"Error reading line '{line}': {str(e)}")
+                return None
         return None
 
     def get_statement_date(self):

@@ -142,26 +142,24 @@ def create_statement(filepath: str) -> Union[
         SCExpense,
         HSBCExpense,
         None]:
-    content = parse_image(filepath)
+    content = parse_llama(filepath)
     checks = {
-        "Standard Chartered": ["Standard Chartered Bank",
-                               "ARUSHI SINHA",
-                               "-2340"],
-        "HSBC": ["HSBC",
-                 "ARUSHI SINHA",
-                 "-2726"],
+        "Standard Chartered": ["-2340"],
+        "HSBC": ["-2726"],
     }
     
     for account, identifiers in checks.items():
         if all(identifier in content for identifier in identifiers):
             if account == "Standard Chartered":
+                print("Creating SCExpense statement object")
                 return SCExpense(filepath, "llama-parse")
             elif account == "HSBC":
+                print("Creating HSBCExpense statement object")
                 return HSBCExpense(filepath, "llama-parse")
     return None
 
 
-@st.cache_data
+# @st.cache_data
 def initialize_data(tabletype):
     if tabletype == 'Expense':
         df = pd.DataFrame(

@@ -1,12 +1,11 @@
 import os
 import sys
 
-from constants import expense_categories, tabs, converter
 from render import README, MAIN
 
 
 def main():
-    if not os.path.isdir('data'):
+    if not os.path.isdir('data') or not os.path.isdir('data/misc'):
         README()
     try:
         MAIN()

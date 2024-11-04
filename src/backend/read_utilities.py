@@ -6,7 +6,7 @@ from datetime import datetime
 import re
 import PyPDF2
 import pytesseract
-#pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/bin/tesseract'
+# pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/bin/tesseract'
 from pdf2image import convert_from_path
 from dateutil.parser import parse
 from decimal import Decimal
@@ -70,6 +70,6 @@ Extract all other text that is relevant to the statement, account, or transactio
         fulltext = ""
         fulltext += "\n".join(docs[ii].text for ii in range(len(docs)))
         return fulltext
-    except Exceptiontion as e:
+    except Exception as e:
         print(f"Error using llama-parse: {e}")
         return None

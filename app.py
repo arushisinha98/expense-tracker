@@ -1,12 +1,12 @@
 import os
 
 from src.main import MAIN
-from src.readme import README
+from src.help import HELP
 
 
 def main():
     if not os.path.isdir('data') or not os.path.isdir('data/misc'):
-        README()
+        HELP()
     try:
         MAIN()
     except Exception as e:

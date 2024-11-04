@@ -64,7 +64,11 @@ class DataManager:
         matching_files = [f for f in self.file_list if filename in f]
         if len(matching_files) < 1:
             return False
-        return True
+        if len(matching_files) > 1:
+            print(f"Warning: Multiple matches found for {filename}:")
+            for f in matching_files:
+                print(f"  {f}")
+        return matching_files[0]
 
     def insert_file(self, content, destination):
         with open(destination, "wb") as f:
@@ -72,10 +76,10 @@ class DataManager:
         return destination
 
     def retrieve_file(self, filename):
-        if not filename.endswith('.csv'):
-            raise TypeError("Only .csv files are retriveable.")
-        filepath = get_full_path(filename)
-        df = pd.read_csv(filename)
+        filepath = self.search_directory(filename)
+        if not filepath:
+            raise FileNotFoundError(f"Could not find file: {filename}")
+        df = pd.read_csv(filepath, index_col = 0)
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         return df
 

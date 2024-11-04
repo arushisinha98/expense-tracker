@@ -1,6 +1,6 @@
 import streamlit as st
 
-def README():
+def HELP():
     '''
     FUNCTION to create a README viewer of the frontend when some baseline assertions have failed.
     '''

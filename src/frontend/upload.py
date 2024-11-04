@@ -1,17 +1,17 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime
 from typing import Union
+from datetime import date, datetime
 
 from src.constants import expense_categories
 from src.utilities import DataDirectory
 from src.format_utilities import create_annotations
 
 from src.backend.read_utilities import parse_pdf, parse_image, parse_llama
-from src.backend.ExpenseStatements import SCExpense, HSBCExpense
+from src.backend.subclasses import *
 
 
-def uploader(upload_folder, tabletype, border = True):
+def auto_upload(upload_folder, tabletype, border = True):
     '''
     FUNCTION to create data uploader with backend logic to process,
     extract, and save data from uploaded statements.
@@ -34,25 +34,21 @@ def uploader(upload_folder, tabletype, border = True):
         
         # check if a new file has been uploaded
         if uploaded_file and uploaded_file != st.session_state["uploaded_file"]:
+            st.session_state["uploaded_file"] = uploaded_file
             filename = uploaded_file.name
-            filetype = uploaded_file.name[uploaded_file.name.rfind("."):]
 
             # if processed .csv has been saved, retrieve and show
             processed_file = filename[:filename.rfind(".")]+".csv"
-            if DataDirectory.search_directory(processed_file):
+            found = DataDirectory.search_directory(filename)
+            processed = DataDirectory.search_directory(processed_file)
+            if found and processed:
                 st.write("A file with this name has already been processed.")
-                st.session_state["statement_object"] = create_statement(
-                    f"{upload_folder}/{uploaded_file.name}"
-                    )
-                retrieved_df = pd.read_csv(
-                    f"{upload_folder}/{processed_file}",
-                    index_col = 0
-                    )
+                st.session_state["statement_object"] = create_statement(found)
+                retrieved_df = DataDirectory.retrieve_file(processed)
                 st.session_state["statement_object"].update_transactions(retrieved_df)
                 st.session_state["uploaded_dataframe"] = retrieved_df
 
             else:
-                st.session_state["uploaded_file"] = uploaded_file
                 filepath = f"{upload_folder}/{filename}"
 
                 # insert file into directory
@@ -79,7 +75,7 @@ def uploader(upload_folder, tabletype, border = True):
                 
             editable_df = show_editable_df(
                 st.session_state["uploaded_dataframe"],
-                num_rows='dynamic'
+                tabletype
                 )
             st.session_state["editable_dataframe"] = editable_df
             
@@ -90,9 +86,9 @@ def uploader(upload_folder, tabletype, border = True):
             if submit_button:
                 st.session_state["statement_object"].update_transactions(editable_df)
                 st.session_state["statement_object"].save_transactions()
-                
-            
-def tabulator(upload_folder, tabletype, border = True):
+
+
+def manual_upload(upload_folder, tabletype, border = True):
     '''
     FUNCTION to create manual data tabulator with backend logic to save data.
     '''
@@ -112,16 +108,19 @@ def tabulator(upload_folder, tabletype, border = True):
         # create unique filename
         filename = st.text_input(
             "Create filename for tabulated data.",
-            placeholder = f"e.g. {datetime.now().month}-{datetime.now().year}"
+            placeholder = "e.g. {ACCOUNT_NAME}" + f"-{datetime.now().month}-{datetime.now().year}"
             )
         if filename and len(filename) > 0:
+            if "." in filename:
+                filename = filename[:filename.rfind(".")]+".csv"
+            else:
+                filename = filename+".csv"
             file_exists = DataDirectory.search_directory(filename)
             if file_exists:
                 st.warning("⚠️ A file with this name already exists.")
                 st.session_state["SubmitError"] = True
             else:
                 st.session_state["SubmitError"] = False
-                filename = filename + '.csv'
                 st.session_state["filepath"] = f"{upload_folder}/{filename}"
 
         submit_button = st.button("Save",
@@ -133,27 +132,6 @@ def tabulator(upload_folder, tabletype, border = True):
                 st.session_state["filepath"], index = False
                 )
             st.write(f"`{filename}` successfully uploaded")
-
-
-def create_statement(filepath: str) -> Union[
-        SCExpense,
-        HSBCExpense,
-        None]:
-    content = parse_llama(filepath)
-    checks = {
-        "Standard Chartered": ["-2340"],
-        "HSBC": ["-2726"],
-    }
-    
-    for account, identifiers in checks.items():
-        if all(identifier in content for identifier in identifiers):
-            if account == "Standard Chartered":
-                print("Creating SCExpense statement object")
-                return SCExpense(filepath, "llama-parse")
-            elif account == "HSBC":
-                print("Creating HSBCExpense statement object")
-                return HSBCExpense(filepath, "llama-parse")
-    return None
 
 
 # @st.cache_data
@@ -250,3 +228,24 @@ def disable_save(editable_df,
     if editable_df[mandatory_cols].isnull().all().any():
         return True
     return editable_df[mandatory_cols].isnull().any().any()
+
+
+def create_statement(filepath: str) -> Union[
+        StanChartExpense,
+        HSBCExpense,
+        None]:
+    content = parse_llama(filepath)
+    checks = {
+        "Standard Chartered": ["-2340"],
+        "HSBC": ["-2726"],
+    }
+    
+    for account, identifiers in checks.items():
+        if all(identifier in content for identifier in identifiers):
+            if account == "Standard Chartered":
+                print("Creating StanChartExpense statement object")
+                return StanChartExpense(filepath, "llama-parse")
+            elif account == "HSBC":
+                print("Creating HSBCExpense statement object")
+                return HSBCExpense(filepath, "llama-parse")
+    return None

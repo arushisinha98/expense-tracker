@@ -3,7 +3,7 @@ import streamlit as st
 from src.constants import expense_categories, tabs
 from src.utilities import DataDirectory
 
-from src.frontend.upload import uploader, tabulator
+from src.frontend import *
 
 
 def MAIN():
@@ -41,8 +41,8 @@ def MAIN():
         if select:
             upload_folder = DataDirectory.get_full_path(select)
             st.caption("Add monthly bank, credit card, or investment statements to the database.")
-            uploader(upload_folder, tabletype)
+            auto_upload(upload_folder, tabletype)
             
             st.caption("OR Manually tabulate data.")
-            tabulator(upload_folder, tabletype)
+            manual_upload(upload_folder, tabletype)
         

@@ -1,18 +1,14 @@
-import os
-import sys
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import date, datetime
 from typing import Union
-import re
 
-from constants import expense_categories, tabs
-from utilities import DataDirectory, get_absolute_path
-from format_utilities import create_annotations
+from src.constants import expense_categories
+from src.utilities import DataDirectory
+from src.format_utilities import create_annotations
 
-sys.path.append(get_absolute_path('backend'))
-from read_utilities import parse_pdf, parse_image, parse_llama
-from ExpenseStatements import SCExpense, HSBCExpense
+from src.backend.read_utilities import parse_pdf, parse_image, parse_llama
+from src.backend.ExpenseStatements import SCExpense, HSBCExpense
 
 
 def uploader(upload_folder, tabletype, border = True):
@@ -110,7 +106,7 @@ def tabulator(upload_folder, tabletype, border = True):
         # display data editor
         editable_df = show_editable_df(
             st.session_state["tabulated_dataframe"],
-            num_rows='dynamic'
+            tabletype
             )
 
         # create unique filename
@@ -119,23 +115,24 @@ def tabulator(upload_folder, tabletype, border = True):
             placeholder = f"e.g. {datetime.now().month}-{datetime.now().year}"
             )
         if filename and len(filename) > 0:
-            while DataDirectory.search_directory(filename):
-                st.write("⚠️ A file with this name already exists.")
+            file_exists = DataDirectory.search_directory(filename)
+            if file_exists:
+                st.warning("⚠️ A file with this name already exists.")
                 st.session_state["SubmitError"] = True
-            st.session_state["SubmitError"] = False
-
-        # save data in chosen directory
-        if st.session_state["SubmitError"] == False:
-            filename = filename[:filename.rfind('.')]+'.csv'
-            filepath = f"{upload_folder}/{filename}"
+            else:
+                st.session_state["SubmitError"] = False
+                filename = filename + '.csv'
+                st.session_state["filepath"] = f"{upload_folder}/{filename}"
 
         submit_button = st.button("Save",
             disabled = disable_save(editable_df),
             key = "manual_save")
         
-        if submit_button:
-            editable_df.reset_index().to_csv(filepath, index = False)
-            st.write(f"Data uploaded to `~/data/{upload_folder}/{filename}.csv`")
+        if submit_button and st.session_state["SubmitError"] == False:
+            editable_df.reset_index().to_csv(
+                st.session_state["filepath"], index = False
+                )
+            st.write(f"`{filename}` successfully uploaded")
 
 
 def create_statement(filepath: str) -> Union[
@@ -169,44 +166,73 @@ def initialize_data(tabletype):
                      "Category",
                      "Comments"]
             )
-        df["Date"] = pd.to_datetime(df["Date"])
+        df["Date"] = pd.to_datetime(df["Date"]).dt.date
         df["Amount"] = df["Amount"].astype("float64")
-    else:
+    elif tabletype == 'Balance':
         df = pd.DataFrame(columns=["Date",
                                    "Balance",
                                    "Comments"]
                           )
-        df["Date"] = pd.to_datetime(df["Date"])
+        df["Date"] = pd.to_datetime(df["Date"]).dt.date
         df["Balance"] = df["Balance"].astype("float64")
+    else:
+        return pd.DataFrame()
     return df.set_index("Date")
 
 
-def show_editable_df(df, num_rows):
-    column_config = {}
-    
-    if 'Date' in df.columns:
-        column_config['Date'] = st.column_config.DateColumn()
-    
-    if 'Category' in df.columns:
-        column_config['Category'] = st.column_config.SelectboxColumn(
-            options=expense_categories
+def show_editable_df(df, tabletype):
+    if tabletype == 'Expense':
+        editable_df = st.data_editor(
+            df,
+            use_container_width=True,
+            num_rows='dynamic',
+            column_config={
+                "Date": st.column_config.DateColumn(
+                    min_value=date(1900, 1, 1),
+                    max_value=date(datetime.now().year, datetime.now().month, datetime.now().day),
+                    format="MM/DD/YYYY",
+                    step=1
+                ),
+                "Category": st.column_config.SelectboxColumn(
+                    options=expense_categories
+                ),
+                "Amount": st.column_config.NumberColumn(
+                    min_value=-99999,
+                    max_value=99999,
+                    step=0.01,
+                    format="%.2f"
+                )
+            },
+            hide_index=True,
         )
-
-    if 'Amount' in df.columns:
-        column_config['Amount'] = st.column_config.NumberColumn(
-            'Amount',
-            min_value=-99999,
-            max_value=99999,
-            step=0.01,
-            format="%.2f"
+    elif tabletype == 'Balance':
+        editable_df = st.data_editor(
+            df,
+            use_container_width=True,
+            num_rows='dynamic',
+            column_config={
+                "Date": st.column_config.DateColumn(
+                    min_value=date(1900, 1, 1),
+                    max_value=date(2100, 12, 31),
+                    format="MM/DD/YYYY",
+                    step=1
+                ),
+                "Balance": st.column_config.NumberColumn(
+                    min_value=-99999,
+                    max_value=99999,
+                    step=0.01,
+                    format="%.2f"
+                )
+            },
+            hide_index=True,
         )
-    
-    editable_df = st.data_editor(
-        df,
-        use_container_width=True,
-        num_rows=num_rows,
-        column_config=column_config
-    )
+    else:
+        editable_df = st.data_editor(
+            df,
+            use_container_width=True,
+            num_rows='dynamic',
+            hide_index=True,
+        )
     return editable_df
         
 

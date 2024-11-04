@@ -1,7 +1,6 @@
-import pandas as pd
 from annotated_text import annotated_text
 
-from dtype_conversions import float_to_str
+from src.dtype_conversions import float_to_str
 
 
 def create_annotations(df, column, threshold, labels):
